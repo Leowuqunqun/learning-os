@@ -51,6 +51,16 @@ export function detectLegacy(storage) {
   };
 }
 
+
+/** 本地时区的 YYYY-MM-DD
+ *  ⚠️ 不要用 toISOString()——它返回 UTC，中国 UTC+8 下
+ *  凌晨 0:00-8:00 会得到前一天。 */
+function localDateStr(d = new Date()) {
+  const x = d instanceof Date ? d : new Date(d);
+  return new Date(x.getTime() - x.getTimezoneOffset() * 60000)
+    .toISOString().slice(0, 10);
+}
+
 /** 生成稳定的迁移 id（可重复执行不产生重复记录） */
 function legacyId(prefix, i, seed) {
   return `${prefix}_migrated_${i}_${String(seed).replace(/\W/g, '').slice(0, 8)}`;
@@ -88,7 +98,9 @@ export function migrate(old, now = Date.now()) {
       subject: String(c.sub ?? c.subject ?? '其他'),
       step: Number.isFinite(c.step) ? c.step : 0,
       okCount: Number.isFinite(c.ok) ? c.ok : (Number.isFinite(c.okCount) ? c.okCount : 0),
-      due: typeof c.due === 'string' ? c.due : new Date(now).toISOString().slice(0, 10),
+      // ⚠️ 必须用本地时区：toISOString 返回 UTC，
+      // 中国 UTC+8 下凌晨 0-8 点会算成前一天
+      due: typeof c.due === 'string' ? c.due : localDateStr(now),
       createdAt: c.createdAt || new Date(now).toISOString(),
     };
   });
@@ -103,7 +115,7 @@ export function migrate(old, now = Date.now()) {
       gap: String(e.gap ?? ''),
       type: String(e.type ?? '概念不懂'),
       round: Number.isFinite(e.round) ? e.round : 0,
-      due: typeof e.due === 'string' ? e.due : new Date(now).toISOString().slice(0, 10),
+      due: typeof e.due === 'string' ? e.due : localDateStr(now),
       archived: e.done === true || e.archived === true,
       createdAt: e.createdAt || new Date(now).toISOString(),
     };

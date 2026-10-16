@@ -337,7 +337,10 @@ async function refresh() {
     el.nErrs.textContent = errs.filter(e=>!e.archived).length;
 
     el.cards.innerHTML = cards.length ? cards.map(c=>{
-      const due = (c.due ?? c.due) <= new Date().toISOString().slice(0,10);
+      // 用本地时区（toISOString 是 UTC，中国凌晨会差一天）
+      const d0 = new Date();
+      const todayLocal = new Date(d0.getTime() - d0.getTimezoneOffset()*60000).toISOString().slice(0,10);
+      const due = c.due <= todayLocal;
       return `<div class="item"><div style="flex:1;min-width:0">
         <div class="t">${esc(c.front)}</div>
         <div class="m">step ${c.step} · 下次 ${c.due} ${due?'<span class="pill warn">待复习</span>':''}</div>

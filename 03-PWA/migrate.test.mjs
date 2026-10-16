@@ -123,6 +123,31 @@ const nr = runMigration(clean);
 check('未迁移', nr.migrated === false);
 check('未写入任何键', Object.keys(clean._dump()).length === 0);
 
+/* ---------- 7. 时区回归（防 toISOString 的 UTC 陷阱） ---------- */
+console.log('\n【7】时区：兜底日期必须用本地时区');
+{
+  // 构造一个「UTC 与本地日期不同」的时刻：
+  // 本地时间 = 当天 00:30，此时 UTC 还是前一天
+  const d = new Date();
+  d.setHours(0, 30, 0, 0);            // 本地凌晨 00:30
+  const localExpected = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+    .toISOString().slice(0, 10);
+  const utcWrong = new Date(d).toISOString().slice(0, 10);
+
+  const r = migrate({ cards: [{ front: 'x', back: 'y' }], errs: [] }, d.getTime());
+  const cardDue = Object.values(r.cards)[0].due;
+
+  check('兜底 due 使用本地日期而非 UTC', cardDue === localExpected,
+        `得到 ${cardDue}，本地应为 ${localExpected}，UTC 为 ${utcWrong}`);
+
+  // 若当前时区恰好 UTC 与本地同一天，这条断言无区分力——如实说明
+  if (localExpected === utcWrong) {
+    console.log('     （注：当前时区下 UTC 与本地同日，此断言区分力有限）');
+  } else {
+    console.log(`     （本地 ${localExpected} vs UTC ${utcWrong}，已区分）`);
+  }
+}
+
 console.log('\n' + '='.repeat(50));
 console.log(`通过 ${pass} 项，失败 ${fail} 项`);
 if (fails.length) console.log('失败：' + fails.join(' / '));
