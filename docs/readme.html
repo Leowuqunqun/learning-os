@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>项目说明 · 学习操作系统</title>
+<meta name="description" content="目录、设计红线、当前状态">
+<meta name="theme-color" content="#2563eb">
+<link rel="stylesheet" href="./docs.css">
+</head>
+<body>
+<header>
+  <a class="back" href="./index.html">← 全部文档</a>
+  <h1>项目说明</h1>
+  <p class="desc">目录、设计红线、当前状态</p>
+</header>
+<main>
+<nav class="toc">
+<strong>本页目录</strong>
+<ol><li><a href="#学习操作系统-教育平权项目">学习操作系统 · 教育平权项目</a></li><li><a href="#这是什么">这是什么</a></li><li><a href="#快速开始">快速开始</a></li><li class="l3"><a href="#1-完全没条件-先看这个-0-元-5-分钟">1. 完全没条件？先看这个（0 元，5 分钟）</a></li><li class="l3"><a href="#2-有平板-手机-用-pwa">2. 有平板/手机？用 PWA</a></li><li class="l3"><a href="#3-想看方法背后的科学依据">3. 想看方法背后的科学依据？</a></li><li><a href="#目录结构">目录结构</a></li><li><a href="#核心框架-学习只有-4-个动作">核心框架：学习只有 4 个动作</a></li><li><a href="#证据基础-诚实版">证据基础（诚实版）</a></li><li><a href="#资源地图要点-已实测">资源地图要点（已实测）</a></li><li><a href="#设计红线-违反任一条就不做">设计红线（违反任一条就不做）</a></li><li><a href="#当前状态">当前状态</a></li><li class="l3"><a href="#已知待补">已知待补</a></li><li><a href="#下一步建议">下一步建议</a></li></ol>
+</nav>
+<h1 id="学习操作系统-教育平权项目">学习操作系统 · 教育平权项目</h1>
+<blockquote><p><strong>把好学校里那套隐性的学习方法，写下来，给每一个家庭。</strong></p>
+<p>免费 · 离线可用 · 低配设备可用 · 数据自主 · 不需要家长会做题</p></blockquote>
+<hr>
+<h2 id="这是什么">这是什么</h2>
+<p>一套给 K12 家庭的<strong>学习方法论 + 工具</strong>。核心主张：</p>
+<blockquote><p>教育不平等最致命的不是资源不平等，而是<strong>方法不平等</strong>—— 优势家庭靠家长"隐性传授"学习方法，劣势家庭没人教。 <strong>而隐性知识是可以被写下来、被复制的。</strong></p></blockquote>
+<p>所以这套东西的每个动作，都遵守一个判据： <strong>把动作简化到"最没条件的家庭也能做"。</strong></p>
+<hr>
+<h2 id="快速开始">快速开始</h2>
+<h3 id="1-完全没条件-先看这个-0-元-5-分钟">1. 完全没条件？先看这个（0 元，5 分钟）</h3>
+<p>打开 <a href="01-方法论/打印版-零门槛.html"><code>01-方法论/打印版-零门槛.html</code></a> → ⌘P 打印 3 页 → 贴上冰箱。 只需要纸和笔，爷爷奶奶也能执行。</p>
+<h3 id="2-有平板-手机-用-pwa">2. 有平板/手机？用 PWA</h3>
+<pre><code>cd 03-PWA &amp;&amp; python3 -m http.server 8080
+# 浏览器打开 http://localhost:8080
+# iPad Safari：分享 → 添加到主屏幕 → 像 App 一样用，断网也能用</code></pre>
+<h3 id="3-想看方法背后的科学依据">3. 想看方法背后的科学依据？</h3>
+<p><a href="01-方法论/学习科学证据简报.md"><code>01-方法论/学习科学证据简报.md</code></a> —— 40 篇文献，含证据强度分级与"不可宣称"红线。</p>
+<hr>
+<h2 id="目录结构">目录结构</h2>
+<pre><code>01-方法论/
+  学习操作系统-总纲.md        ← 从这开始：核心框架（4 个动作）
+  四动作执行手册.md           ← 今天回家怎么做（最实用）
+  学段适配指南.md             ← 按年级：同一方法怎么改
+  打印版-零门槛.html          ← 3 页打印版，无设备可用
+  学习科学证据简报.md         ← 科学依据 + 证据分级 + 红线
+
+02-资源地图/
+  K12免费教育资源地图.md      ← 免费优质资源（逐条 HTTP 实测）
+  PhET中文模拟清单.md         ← 189 个可离线中文科学模拟（可点开）
+  gen-phet.js                 ← 清单生成脚本（可重新生成）
+
+03-PWA/
+  index.html                  ← 单文件应用（零依赖，20KB）
+  manifest.webmanifest        ← PWA 配置
+  sw.js                       ← Service Worker（离线缓存）
+  icons/                      ← 图标
+
+04-调研/
+  教育平权与推广路径.md       ← 怎么从"我家"复制到"很多家庭"</code></pre>
+<hr>
+<h2 id="核心框架-学习只有-4-个动作">核心框架：学习只有 4 个动作</h2>
+<div class="tw"><table>
+<thead><tr>
+<th>动作</th>
+<th>做什么</th>
+<th>为什么有效</th>
+</tr></thead><tbody>
+<tr><td><strong>① 编码</strong></td><td>合上书，用自己的话讲一遍</td><td>放弃"重读"（证据评级最低），改用自我解释</td></tr>
+<tr><td><strong>② 巩固</strong></td><td>按间隔表自测：当天→D2→D4→D7→D15→D30</td><td>间隔效应（证据评级最高之一）</td></tr>
+<tr><td><strong>③ 提取</strong></td><td>错题重做、讲给别人听</td><td>测试效应：g≈0.51（对比重读）</td></tr>
+<tr><td><strong>④ 迁移</strong></td><td>变式练习，至少 2 个不同表面的例子</td><td>迁移需要多个例子（Gick &amp; Holyoak 1983）</td></tr>
+</tbody></table></div>
+<hr>
+<h2 id="证据基础-诚实版">证据基础（诚实版）</h2>
+<p>本项目的核心主张建立在<strong>高证据强度</strong>的发现上：</p>
+<p>✅ <strong>强证据</strong></p>
+<ul><li>提取练习（自测）优于重读 —— 两项元分析一致，Adesope 2017 总体 g=0.61</li><li>间隔练习优于集中练习 —— 184 篇文献综合</li><li>语音意识+拼读（低龄）—— 高危儿童回报最高（随访 d=1.33）</li><li>工作示例对新手有效 —— 但<strong>必须随专长逆转</strong></li></ul>
+<p>⚠️ <strong>有争议 / 被夸大（本项目不夸大）</strong></p>
+<ul><li><strong>交错练习</strong>：元分析显示数学仅 g=0.34（小效应），说明文不显著， <strong>词汇学习反而"集中练"更好（g=−0.39）</strong> → 所以本项目：数学/理科用交错，<strong>背单词不用</strong></li><li><strong>成长型思维</strong>：63 项研究 N=97,672，d̄=0.05，<strong>发表偏倚校正后不显著</strong> → 所以本项目<strong>不宣称"成长型思维能提分"</strong></li><li><strong>儿童的最优间隔参数</strong>：经典研究多为大学生， 真实小学课堂研究显示"间隔的额外收益不显著" → 所以本项目给的是保守排程，<strong>不宣称某个天数有魔力</strong></li></ul>
+<p>❌ <strong>明确证伪（本项目绝不使用）</strong></p>
+<ul><li>学习风格匹配（视觉型/听觉型）</li><li>左右脑 / 右脑开发</li><li>"关键期过了就学不会"</li><li>脑力训练的迁移效应</li><li>学习金字塔百分比（10%/20%/90%）—— 数字是编造的</li><li>SQ3R"有科学依据"（实际缺乏严格实验支持）</li></ul>
+<blockquote><p>完整论证见 <a href="01-方法论/学习科学证据简报.md"><code>学习科学证据简报.md</code></a> §8、§9。</p></blockquote>
+<hr>
+<h2 id="资源地图要点-已实测">资源地图要点（已实测）</h2>
+<ul><li><strong>PhET 互动模拟</strong>：<strong>189 个</strong>中文 HTML5 模拟，CC BY 4.0（授权最干净） → 可自由打包、可离线、免费。直链格式见清单文件。</li><li><strong>国家中小学智慧教育平台</strong>：主力免费平台，电子课本可下载 ⚠️ 但版权属出版社 → <strong>项目只能引导家长自行下载，不得打包再分发</strong></li><li>⚠️ <strong>"Khan Academy 有完整中文版"是错的</strong> —— 域名存活但内容严重不全</li><li>⚠️ <strong>Anki iOS 版收费（约 $24.99）</strong> —— iPad 用户请走网页版 ankiweb.net</li><li>⚠️ 一批网上高频推荐的站点实测<strong>已失效</strong>（51voa/putclub/hxen/24en 等），清单内已标注</li></ul>
+<hr>
+<h2 id="设计红线-违反任一条就不做">设计红线（违反任一条就不做）</h2>
+<ol><li><strong>零成本</strong> —— 核心方法必须免费，付费只能是可选增强</li><li><strong>离线可用</strong> —— 断网后核心功能不失效</li><li><strong>低配可用</strong> —— 老旧设备能跑（当前：单文件 20KB，零外部依赖）</li><li><strong>低文化门槛</strong> —— 不假设家长学历</li><li><strong>数据自主</strong> —— 学习数据默认只存本地，不上传（涉及未成年人）</li><li><strong>可复制</strong> —— 一个家庭跑通后能整体复制给另一个家庭</li></ol>
+<hr>
+<h2 id="当前状态">当前状态</h2>
+<ul><li>✅ 方法论（总纲 / 执行手册 / 学段适配 / 打印版）</li><li>✅ 资源地图（逐条 HTTP 实测，含避坑）</li><li>✅ PWA 原型（功能已测试通过：卡片、间隔算法、错题归档、离线、导入导出）</li><li>⏳ <strong>待验证：真实家庭使用效果</strong>（下一步最重要）</li></ul>
+<h3 id="已知待补">已知待补</h3>
+<ol><li><strong>汉字习得证据缺口</strong> —— 现有识字/拼读证据均来自拼音文字研究，中文需外推标注</li><li>儿童最优间隔参数（当前用保守排程）</li><li>多孩子档案（当前 PWA 为单档案，需扩展）</li></ol>
+<hr>
+<h2 id="下一步建议">下一步建议</h2>
+<p><strong>先在自家跑 2-4 周</strong>，记录三类信息：</p>
+<ol><li>哪个动作孩子最抗拒？</li><li>哪个动作效果最明显？</li><li>家长最难坚持的是什么？</li></ol>
+<blockquote><p>不要试图一次设计出完美体系。 <strong>先跑起来，让真实反馈来改设计。</strong></p></blockquote>
+</main>
+<footer>
+  <p>学习操作系统 · 教育平权项目</p>
+  <p>免费复制 · 欢迎转发给任何家庭</p>
+</footer>
+<script>
+// 表格横向滚动提示 + 回到顶部
+(function(){
+  document.querySelectorAll('.tw').forEach(function(w){
+    if(w.scrollWidth > w.clientWidth + 4) w.classList.add('scrollable');
+  });
+})();
+</script>
+</body>
+</html>
