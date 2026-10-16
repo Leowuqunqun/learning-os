@@ -75,3 +75,22 @@ python3 tools/audit-reachability.py
 1. 从 `index.html` 和 `03-PWA/index.html` 出发做 BFS，得到可达集合
 2. 与应可达资产对比，报告**孤儿**（存在但走不到）
 3. 检查是否有页面直接链到 `.md`（手机上会变纯文本）
+
+## verify-deploy.py
+
+部署验证：push 之后确认 GitHub Pages 真的构建好、资源真的能访问。
+
+```bash
+python3 tools/verify-deploy.py          # 直接检查
+python3 tools/verify-deploy.py --wait   # 先等构建完成
+python3 tools/verify-deploy.py --json   # 机器可读
+```
+
+检查 22 项资源的：HTTP 状态、Content-Type、内容关键字。
+
+### 两个踩过的坑
+
+1. **urllib 不会自动编码中文路径**（curl 会）。不显式 `quote()` 会直接失败，
+   表现为 HTTP 0——看起来像部署问题，其实是脚本问题。
+2. **JS 的 MIME 是 `application/javascript`**，不是 `text/javascript`。
+   写错期望值会产生假失败。
