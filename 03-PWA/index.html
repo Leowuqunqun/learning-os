@@ -139,6 +139,34 @@ details .body li{margin:5px 0}
 .wk-msg.ok{color:var(--fg)}
 .wk-msg.good{color:var(--ok);font-weight:600}
 
+
+/* 统计页 */
+.bar-list{display:flex;flex-direction:column;gap:9px}
+.bar-row{display:grid;grid-template-columns:76px 1fr 62px;gap:9px;align-items:center}
+.bar-label{font-size:12.5px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-track{height:16px;background:var(--bg);border:1px solid var(--line);
+  border-radius:99px;overflow:hidden}
+.bar-fill{height:100%;background:var(--brand);border-radius:99px;
+  transition:width .35s ease}
+.bar-num{font-size:12.5px;text-align:right;color:var(--fg);font-weight:600;
+  white-space:nowrap}
+.bar-num span{color:var(--muted);font-weight:400;font-size:11px;margin-left:3px}
+.advice{background:var(--card);border:1px solid var(--line);border-radius:11px;
+  padding:12px 13px}
+.adv-head{font-size:13.5px;margin-bottom:6px}
+.advice p{margin:5px 0;font-size:13.5px;line-height:1.72;color:var(--fg)}
+.advice p b{color:var(--muted);font-weight:600}
+.warn-box{background:#fff7ed;border-left:3px solid #ea580c;padding:10px 12px;
+  border-radius:0 9px 9px 0;font-size:13px;line-height:1.72;margin-top:12px;color:#7c2d12}
+@media(prefers-color-scheme:dark){
+  .warn-box{background:#431407;color:#fed7aa}
+}
+.pace-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.pace-grid>div{background:var(--bg);border:1px solid var(--line);border-radius:11px;
+  padding:12px;text-align:center}
+.pace-grid b{display:block;font-size:22px;font-weight:700;color:var(--brand)}
+.pace-grid span{display:block;font-size:11.5px;color:var(--muted);margin-top:3px}
+
 .toast{position:fixed;bottom:calc(84px + env(safe-area-inset-bottom));left:50%;
   transform:translateX(-50%);background:#0f172a;color:#fff;padding:10px 18px;
   border-radius:99px;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:99}
@@ -269,6 +297,28 @@ details .body li{margin:5px 0}
     </div></details>
   </section>
 
+  <!-- 统计 -->
+  <section id="v-stats" class="view">
+    <div class="card">
+      <h2>错因分布</h2>
+      <p class="muted">看清孩子<b>为什么</b>错，比看错了几道题有用。</p>
+      <div id="errDist"></div>
+    </div>
+    <div class="card">
+      <h2>科目分布</h2>
+      <p class="muted">知识卡集中在哪一科，说明最近在攻克什么。</p>
+      <div id="subjDist"></div>
+    </div>
+    <div class="card">
+      <h2>错因解读</h2>
+      <div id="errAdvice"></div>
+    </div>
+    <div class="card">
+      <h2>学习节奏</h2>
+      <div id="paceInfo"></div>
+    </div>
+  </section>
+
   <!-- 设置 -->
   <section id="v-more" class="view">
     <div class="card">
@@ -329,6 +379,7 @@ details .body li{margin:5px 0}
   <button class="on" data-v="today" onclick="go('today',this)"><span class="ic">◎</span>今日</button>
   <button data-v="cards" onclick="go('cards',this)"><span class="ic">▤</span>知识卡</button>
   <button data-v="errors" onclick="go('errors',this)"><span class="ic">✎</span>错题</button>
+  <button data-v="stats" onclick="go('stats',this)"><span class="ic">◔</span>统计</button>
   <button data-v="method" onclick="go('method',this)"><span class="ic">◆</span>方法</button>
   <button data-v="more" onclick="go('more',this)"><span class="ic">⋯</span>更多</button>
 </nav>
@@ -433,6 +484,7 @@ function go(v,el){
   const T={today:['学习操作系统','把学习变成可以照着做的流程'],
     cards:['知识卡','正面问问题，背面写你自己的解释'],
     errors:['错题本','关键不是抄题，是记下"我当时怎么想的"'],
+    stats:['学习统计','看清为什么错，比看错了几道题有用'],
     method:['学习方法','学习只有 4 个动作'],
     more:['更多','档案 · 数据 · 关于']};
   document.getElementById('hTitle').textContent=T[v][0];
@@ -440,6 +492,7 @@ function go(v,el){
   if(v==='today')renderToday();
   if(v==='cards')renderCards();
   if(v==='errors')renderErrs();
+  if(v==='stats')renderStats();
 }
 
 /* ---------- 知识卡 ---------- */
@@ -688,7 +741,7 @@ async function resetAll(){
   await loadDB();renderAll();toast('已清空');
 }
 function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
-function renderAll(){renderToday();renderCards();renderErrs();renderKids();renderWeek();}
+function renderAll(){renderToday();renderCards();renderErrs();renderKids();renderWeek();renderStats();}
 
 /* ---------- 离线 ---------- */
 function upOffline(){document.getElementById('offbar').hidden=navigator.onLine;}
@@ -802,6 +855,156 @@ function renderWeek() {
     <p class="wk-msg ${tone}">${msg}</p>
     <p class="muted" style="font-size:12.5px;margin-top:8px">
       只要当天记录过知识卡或错题，就算"做到"。
+    </p>
+  `;
+}
+
+
+/* ---------- 学习统计 ----------
+   设计原则：家长不是要"看数据"，是要"知道该做什么"。
+   所以每张图下面必须给一句可执行的解读，而不是只丢一个百分比。 */
+
+const ERR_TYPES = ['概念不懂','审题错','计算粗心','思路断','时间不够','完全没思路'];
+
+/** 每种错因对应的建议（这是本页的核心价值） */
+const ERR_ADVICE = {
+  '概念不懂': {
+    what: '孩子没真正理解这个知识点，只是记住了字面。',
+    how: '用「合书复述」——让他不看书画讲一遍。讲不出来就是没懂，回去重学那一处。',
+    good: false,
+  },
+  '审题错': {
+    what: '题读错了或漏看了条件，知识本身可能是会的。',
+    how: '养成「先圈关键词再动笔」的习惯。卡住时家长只问一句：「这题问的是什么？」',
+    good: false,
+  },
+  '计算粗心': {
+    what: '思路对，但算错了。这是最容易被误解为"不认真"的一类。',
+    how: '别骂态度。粗心多半是工作记忆超载——让他把中间步骤写出来，别心算。',
+    good: false,
+  },
+  '思路断': {
+    what: '知道方向但走不下去，通常缺少某一环的练习。',
+    how: '让他把「卡在哪一步」具体说出来。找到那一环，专门练 3-5 道同类。',
+    good: false,
+  },
+  '时间不够': {
+    what: '会做但太慢，可能是熟练度不够，也可能是考试策略问题。',
+    how: '限时练习。先练"会的题快速拿下"，而不是死磕难题。',
+    good: false,
+  },
+  '完全没思路': {
+    what: '这类题没见过，或基础缺口太大。',
+    how: '看例题——新手先研究 2-3 道完整例题，再自己做，比直接做题效率高得多。',
+    good: false,
+  },
+};
+
+function renderStats() {
+  const box = {
+    err: document.getElementById('errDist'),
+    subj: document.getElementById('subjDist'),
+    adv: document.getElementById('errAdvice'),
+    pace: document.getElementById('paceInfo'),
+  };
+  if (!box.err) return;
+
+  if (!kidId) {
+    const empty = '<div class="empty">添加孩子并记录一些错题后，这里会显示统计</div>';
+    box.err.innerHTML = box.subj.innerHTML = box.adv.innerHTML = box.pace.innerHTML = empty;
+    return;
+  }
+
+  /* --- 错因分布 --- */
+  const errs = DB.errs || [];
+  const counts = {};
+  ERR_TYPES.forEach(t => counts[t] = 0);
+  errs.forEach(e => { if (counts[e.type] !== undefined) counts[e.type]++; });
+
+  const total = errs.length;
+  if (!total) {
+    box.err.innerHTML = '<div class="empty">还没有错题记录</div>';
+    box.adv.innerHTML = '<p class="muted">记录第一道错题后，这里会告诉你该重点抓什么。</p>';
+  } else {
+    const rows = ERR_TYPES
+      .map(t => ({ t, n: counts[t], pct: Math.round(counts[t] / total * 100) }))
+      .filter(r => r.n > 0)
+      .sort((a, b) => b.n - a.n);
+
+    box.err.innerHTML = `
+      <div class="bar-list">
+        ${rows.map(r => `
+          <div class="bar-row">
+            <div class="bar-label">${esc(r.t)}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:${r.pct}%"></div></div>
+            <div class="bar-num">${r.n}<span>${r.pct}%</span></div>
+          </div>`).join('')}
+      </div>
+      <p class="muted" style="font-size:12.5px;margin-top:10px">共 ${total} 道错题</p>
+    `;
+
+    // 解读：取占比最高的两类
+    const top = rows[0];
+    const second = rows[1];
+    const a1 = ERR_ADVICE[top.t];
+    let html = `
+      <div class="advice">
+        <div class="adv-head">最主要的问题：<b>${esc(top.t)}</b>（${top.pct}%）</div>
+        <p><b>可能是：</b>${a1.what}</p>
+        <p><b>怎么办：</b>${a1.how}</p>
+      </div>`;
+    if (second && second.n >= 2) {
+      const a2 = ERR_ADVICE[second.t];
+      html += `
+      <div class="advice" style="margin-top:12px">
+        <div class="adv-head">其次是：<b>${esc(second.t)}</b>（${second.pct}%）</div>
+        <p><b>怎么办：</b>${a2.how}</p>
+      </div>`;
+    }
+    // 「计算粗心」占比过高时给特别提醒
+    if (counts['计算粗心'] / total >= 0.4) {
+      html += `<div class="warn-box">「计算粗心」占了 ${Math.round(counts['计算粗心']/total*100)}%，
+        这通常<b>不是态度问题</b>，而是心算负担太重。让孩子把中间步骤写出来，会比反复提醒"细心点"有效得多。</div>`;
+    }
+    box.adv.innerHTML = html;
+  }
+
+  /* --- 科目分布 --- */
+  const cards = DB.cards || [];
+  const sc = {};
+  cards.forEach(c => { sc[c.sub] = (sc[c.sub] || 0) + 1; });
+  const sorted = Object.entries(sc).sort((a, b) => b[1] - a[1]);
+  const ctotal = cards.length;
+
+  box.subj.innerHTML = ctotal
+    ? `<div class="bar-list">
+        ${sorted.map(([k, n]) => `
+          <div class="bar-row">
+            <div class="bar-label">${esc(k)}</div>
+            <div class="bar-track"><div class="bar-fill" style="width:${Math.round(n/ctotal*100)}%"></div></div>
+            <div class="bar-num">${n}<span>${Math.round(n/ctotal*100)}%</span></div>
+          </div>`).join('')}
+      </div>
+      <p class="muted" style="font-size:12.5px;margin-top:10px">共 ${ctotal} 张知识卡</p>`
+    : '<div class="empty">还没有知识卡</div>';
+
+  /* --- 学习节奏 --- */
+  const act = readActivity()[kidId] || [];
+  const days = lastDays(30);
+  const set = new Set(act);
+  const last30 = days.filter(d => set.has(d)).length;
+  const streak = streakOf(act);
+  const dueCount = (DB.cards || []).filter(c => c.due <= today()).length;
+
+  box.pace.innerHTML = `
+    <div class="pace-grid">
+      <div><b>${last30}</b><span>近 30 天有记录</span></div>
+      <div><b>${streak}</b><span>连续天数</span></div>
+      <div><b>${(DB.cards||[]).length}</b><span>知识卡总数</span></div>
+      <div><b>${dueCount}</b><span>当前待复习</span></div>
+    </div>
+    <p class="muted" style="font-size:12.5px;margin-top:10px">
+      每天 5-15 分钟就够。<b>能坚持比做得多重要。</b>
     </p>
   `;
 }
@@ -921,7 +1124,7 @@ Object.assign(window, {
   addCard, addErr, delCard, delErr, delKid, editKid, errDone,
   exportData, go, resetAll, saveKid, showAnswer, startReview,
   switchKid, toggleKidForm,
-  guideOpen, guideClose, guideNext, guidePrev, renderWeek,
+  guideOpen, guideClose, guideNext, guidePrev, renderWeek, renderStats,
 });
 
 /* ---------- 启动 ---------- */
