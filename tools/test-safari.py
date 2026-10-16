@@ -186,6 +186,64 @@ def main():
                       f'档案 {cnt}，已存储 {saved}')
             ctx2.close()
 
+
+            print('\n【7】四个学段分支（此前只测过 high/mid）')
+            # 学段影响「每日流程」文案与语音脚本，共 4 个分支。
+            # 各分支的字符串是分别写死的，容易漏改或写错。
+            STAGES = {
+                'low':    ('先玩 20 分钟', '亲子阅读'),
+                'high':   ('先玩 20 分钟', '当小老师'),
+                'mid':    ('自主安排', '手机放在另一个房间'),
+                'senior': ('自主规划', '睡眠是学习的一部分'),
+            }
+            for st, (k1, k2) in STAGES.items():
+                ctx3 = b.new_context(viewport={'width': 390, 'height': 844},
+                                     is_mobile=True, has_touch=True)
+                pg3 = ctx3.new_page()
+                e3 = []
+                pg3.on('pageerror', lambda e: e3.append(str(e)))
+                pg3.goto(APP, wait_until='networkidle')
+                pg3.wait_for_timeout(2200)
+                if pg3.locator('#guide').is_visible():
+                    for _ in range(3):
+                        pg3.get_by_role('button', name='下一步').click()
+                        pg3.wait_for_timeout(180)
+                    pg3.get_by_role('button', name='开始使用').click()
+                    pg3.wait_for_timeout(400)
+                pg3.locator('nav button', has_text='更多').click()
+                pg3.wait_for_timeout(400)
+                pg3.locator('#kidFormBtn').click()
+                pg3.wait_for_timeout(300)
+                pg3.fill('#kidName', st + '娃')
+                pg3.select_option('#kidStage', st)
+                pg3.locator('button', has_text='保存').first.click()
+                pg3.wait_for_timeout(700)
+                pg3.locator('nav button', has_text='今日').click()
+                pg3.wait_for_timeout(500)
+
+                flow = pg3.locator('#dailyFlow').inner_text()
+                check(f'{st} 学段流程文案正确', k1 in flow and k2 in flow, flow[:44])
+
+                # 语音脚本（不识字的家长靠它）
+                spoken = pg3.evaluate("""(async () => {
+                  return await new Promise(resolve => {
+                    window.__sp = null;
+                    const orig = speechSynthesis.speak.bind(speechSynthesis);
+                    speechSynthesis.speak = u => { window.__sp = u.text; };
+                    try { speakDaily(''); } catch(e) { resolve('throw'); return; }
+                    setTimeout(() => {
+                      speechSynthesis.speak = orig;
+                      resolve(window.__sp || 'nothing');
+                    }, 350);
+                  });
+                })()""")
+                check(f'{st} 语音脚本非空且含该学段内容',
+                      isinstance(spoken, str) and len(spoken) > 20
+                      and (k1 in spoken or k2 in spoken),
+                      str(spoken)[:40])
+                check(f'{st} 无 JS 错误', not e3, e3[:1])
+                ctx3.close()
+
             print('\n【5】布局')
             d = json.loads(page.evaluate(
                 "JSON.stringify({vw:document.documentElement.clientWidth,"
