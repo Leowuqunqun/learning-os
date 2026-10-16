@@ -172,6 +172,25 @@ def main():
         check('README 中有可核对的规模描述', True,
               '（未找到「单文件 N KB」表述，跳过）')
 
+    # ---------- 渲染产物是否与源文件同步 ----------
+    print('\n【8】文档渲染是否最新（改了 .md 但没重建，线上就是旧的）')
+    docs_dir = os.path.join(ROOT, 'docs')
+    idx_page = os.path.join(docs_dir, 'index.html')
+    if not os.path.exists(idx_page):
+        check('docs/ 已生成', False, '缺少 docs/index.html')
+    else:
+        idx_mtime = os.path.getmtime(idx_page)
+        stale = []
+        for src_rel in ['README.md'] + \
+                [os.path.join(d, f) for d in ['01-方法论', '02-资源地图', '04-调研']
+                 for f in sorted(os.listdir(os.path.join(ROOT, d)))
+                 if f.endswith('.md')]:
+            p2 = os.path.join(ROOT, src_rel)
+            if os.path.exists(p2) and os.path.getmtime(p2) > idx_mtime:
+                stale.append(src_rel)
+        check('★没有「改了源文件但未重建」的文档', not stale,
+              f'需重跑 build-docs.py：{stale[:3]}')
+
     print('\n' + '=' * 70)
     if fail:
         print(f'通过 {ok} 项，失败 {fail} 项')
