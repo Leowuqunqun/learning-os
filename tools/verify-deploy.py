@@ -58,10 +58,26 @@ CHECKS = [
 MUST_NOT_BE_MARKDOWN = [p for p, ct, _ in CHECKS]
 
 
-def fetch(path, timeout=25):
-    # 注意：urllib 不会自动对中文路径做百分号编码（curl 会自动）。
-    # 不编码会直接失败，所以这里显式处理。
+def fetch(path, timeout=25, retries=3):
+    """抓取远端资源。
+
+    带重试：GitHub Pages 部署过程中会短暂 404/超时，
+    单次失败会产生**假警报**（实测踩过一次：图标在部署中途报错，
+    几秒后复查完全正常）。这类噪声会让人逐渐不信任检查结果。
+    """
     url = BASE + urllib.parse.quote(path)
+    last = None
+    for attempt in range(retries):
+        r = _fetch_once(url, timeout)
+        if r['status'] == 200:
+            return r
+        last = r
+        if attempt < retries - 1:
+            time.sleep(4)
+    return last
+
+
+def _fetch_once(url, timeout=25):
     req = urllib.request.Request(url, headers={'User-Agent': 'deploy-verify/1.0'})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
