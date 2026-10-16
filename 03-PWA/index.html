@@ -167,6 +167,17 @@ details .body li{margin:5px 0}
 .pace-grid b{display:block;font-size:22px;font-weight:700;color:var(--brand)}
 .pace-grid span{display:block;font-size:11.5px;color:var(--muted);margin-top:3px}
 
+
+/* 表格（方法页用）：手机上横向滚动，不撑破页面
+   与 docs/docs.css 保持一致的实现 */
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:10px 0;
+  border:1px solid var(--line);border-radius:10px;max-width:100%;width:100%}
+.tw table{border-collapse:collapse;font-size:13px;min-width:max-content;width:auto}
+.tw th,.tw td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;
+  vertical-align:top;white-space:normal;min-width:70px}
+.tw th{background:var(--brand-soft);font-weight:650;white-space:nowrap}
+.tw tr:last-child td{border-bottom:0}
+
 .toast{position:fixed;bottom:calc(84px + env(safe-area-inset-bottom));left:50%;
   transform:translateX(-50%);background:#0f172a;color:#fff;padding:10px 18px;
   border-radius:99px;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:99}
@@ -258,6 +269,22 @@ details .body li{margin:5px 0}
       <h2>学习只有 4 个动作</h2>
       <div class="big">任何一次有效学习，拆到底只有 4 步。<br>整个体系就是围绕它们设计的。</div>
     </div>
+    <details><summary>先看这个：为什么"努力却没用"</summary><div class="body">
+      <p>孩子不是懒，是在用一套<b>感觉有效</b>的方法。差距就在这里：</p>
+      <div class="tw"><table>
+        <thead><tr><th>孩子常做的</th><th>为什么没用</th><th>改成这样</th></tr></thead>
+        <tbody>
+          <tr><td>反复读课文</td><td>越读越顺，大脑误以为"会了"</td><td>合上书，讲一遍</td></tr>
+          <tr><td>用荧光笔划重点</td><td>手在动，脑没动；还会高估自己</td><td>划完合书自问"刚才划的啥意思"</td></tr>
+          <tr><td>抄错题 + 抄答案</td><td>只是"重读"，几乎无效</td><td>记下"我当时怎么想的"，3 天后再做</td></tr>
+          <tr><td>一次刷同一类题 20 道</td><td>只练熟了套路，换问法就废</td><td>混着练不同题型（数学理科适用）</td></tr>
+          <tr><td>考前突击</td><td>考完就忘，等于没学</td><td>每天 5 分钟，按复习点自测</td></tr>
+        </tbody>
+      </table></div>
+      <p class="muted">这 5 条里，前 4 条被权威评级列为"最低效用"或需限定条件。
+      <b>不是孩子不努力，是方法错了。</b></p>
+    </div></details>
+
     <details><summary>① 编码 —— 合书讲一遍</summary><div class="body">
       <p><b>核心一问：能合上书用自己的话讲出来吗？</b></p>
       <ul><li>读完一小段 → 合上 → 讲一遍</li>
