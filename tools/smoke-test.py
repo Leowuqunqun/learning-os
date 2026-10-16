@@ -285,6 +285,41 @@ setTimeout(async () => {
         check('新题重置为隐藏', d.get('reset') is True)
         check('交互过程无 JS 错误', len(d.get('errs', [])) == 0, d.get('errs'))
 
+
+    # ---------- 4. 静态完整性（无需浏览器） ----------
+    print('\n【4】静态完整性（声明与实现是否对得上）')
+    src = open(os.path.join(ROOT, '03-PWA', 'index.html'), encoding='utf-8').read()
+    parts = src.split('<script type="module">')
+    html_part = parts[0]
+    mod = parts[1] if len(parts) > 1 else ''
+
+    # 4a. JS 引用但 HTML 里不存在的 id（会返回 null，后续操作报错）
+    html_ids = set(re.findall(r'id="([\w-]+)"', html_part))
+    js_ids = set(re.findall(r"getElementById\('([\w-]+)'\)", mod))
+    js_ids |= set(re.findall(r"\$\('([\w-]+)'\)", mod))
+    missing_ids = sorted(js_ids - html_ids)
+    check('★JS 引用的 id 都存在', not missing_ids, f'缺失: {missing_ids}')
+
+    # 4b. 死代码：定义了、没导出、HTML 没调用、模块内也没别处调用
+    defined = set(re.findall(r'^(?:async\s+)?function\s+([a-zA-Z_$][\w$]*)', mod, re.M))
+    mm = re.search(r'Object\.assign\(window,\s*\{([\s\S]*?)\}\)', mod)
+    exported = set(re.findall(r'([a-zA-Z_$][\w$]*)', mm.group(1))) if mm else set()
+    called_html = set(re.findall(r'on(?:click|change|input)="([a-zA-Z_$][\w$]*)\s*\(', html_part))
+    dead = []
+    for f in sorted(defined):
+        if f in exported or f in called_html:
+            continue
+        # 统计模块内调用次数（定义行本身算 1 次）
+        if len(re.findall(r'(?<![\w.$])' + re.escape(f) + r'\s*\(', mod)) <= 1:
+            dead.append(f)
+    check('★没有无人调用的死函数', not dead, f'死代码: {dead}')
+
+    # 4c. 每个 on* 处理器引用的函数必须真的定义了
+    handlers = set(re.findall(r'on(?:click|change|input)="([a-zA-Z_$][\w$]*)\s*\(', html_part))
+    handlers |= set(re.findall(r"onclick=\\?[\"']([a-zA-Z_$][\w$]*)\(", mod))
+    undef = sorted(h for h in handlers if h not in defined and h not in exported)
+    check('★所有事件处理器都有对应函数', not undef, f'未定义: {undef}')
+
     print('\n' + '=' * 72)
     if failed:
         print(f'通过 {passed} 项，失败 {failed} 项')

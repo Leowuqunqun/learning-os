@@ -633,19 +633,6 @@ async function addCard(){
   await loadDB();renderCards();renderToday();
   toast('已添加，明天开始复习');
 }
-async function cardOK(id){
-  await adapter.gradeCard(kidId,id,true);
-  markActivity(kidId);
-  await loadDB();renderCards();renderToday();
-  const c=DB.cards.find(x=>x.id===id);
-  toast('记住了 · 下次 '+c.due);
-}
-async function cardFail(id){
-  await adapter.gradeCard(kidId,id,false);
-  markActivity(kidId);
-  await loadDB();renderCards();renderToday();
-  toast('没关系 · 明天再来');
-}
 async function delCard(id){
   await adapter.deleteCard(kidId,id);
   await loadDB();renderCards();renderToday();
