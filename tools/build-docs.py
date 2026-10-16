@@ -31,6 +31,8 @@ DOCS = [
      'PhET 中文模拟清单', '189 个可离线中文科学模拟', '资源'),
     ('04-调研/教育平权与推广路径.md', 'pingquan.html',
      '教育平权与推广路径', '怎么从"我家"复制到"很多家庭"', '其他'),
+    ('04-调研/汉字习得证据综述.md', 'hanzi.html',
+     '汉字习得证据综述', '5 项元分析核查：推翻"无证据"的结论', '调研'),
     ('README.md', 'readme.html', '项目说明', '目录、设计红线、当前状态', '其他'),
 ]
 
@@ -377,7 +379,7 @@ def build():
         print(f'  ✅ {src_rel}  →  docs/{out_name}  ({len(md)} 字符)')
 
     groups_html = ''
-    for group in ['方法论', '资源', '其他']:
+    for group in ['方法论', '资源', '调研', '其他']:
         if group not in cards:
             continue
         items = ''
