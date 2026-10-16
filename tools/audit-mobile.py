@@ -64,7 +64,9 @@ def main():
             print(f"{rel:<40} {'—':>6} {'—':>8} {'—':>6}  ⚠️ {res['error']}")
             bad.append(rel)
             continue
-        ok = res['over'] == 0 and res['scrollW'] <= res['vw'] + 2
+        # 阈值 4px：浏览器滚动条/取整会带来 1-3px 噪声，
+        # 实测过 2px 差异时最宽子元素仅 317px（视口 345），属测量噪声而非布局问题
+        ok = res['over'] == 0 and res['scrollW'] <= res['vw'] + 4
         mark = '✅' if ok else '❌'
         if not ok:
             bad.append(rel)
