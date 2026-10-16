@@ -42,15 +42,33 @@ CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
 BASE = os.environ.get('SMOKE_BASE', 'http://127.0.0.1:8150')
 PWA = f'{BASE}/03-PWA/index.html'
 
-# PWA 必须挂到 window 的函数（inline onclick 依赖它们）
-# 少一个，对应的按钮就是死的
-REQUIRED_GLOBALS = [
-    'go', 'saveKid', 'addCard', 'addErr', 'delCard', 'delErr',
-    'errDone', 'switchKid', 'editKid', 'delKid', 'toggleKidForm',
-    'exportData', 'resetAll', 'startReview', 'reviewReveal', 'reviewGrade',
-    'reviewQuit', 'speakPhrases', 'speakDaily', 'stopSpeak',
-    'toggleTtsAuto', 'guideOpen', 'guideNext', 'guideClose',
-]
+def required_globals():
+    """
+    从 index.html **自动提取**必须挂到 window 的函数名。
+
+    为什么自动提取：手写清单会继承我的盲区。
+    2026-10 就是这样漏掉了 importData —— 它被 inline onchange 调用，
+    但从未加到 window，导致「导入」按钮点了完全没反应，
+    而手写的检查清单里恰好没有它。
+
+    提取来源：
+      ① HTML 部分里 inline 的 onclick/onchange
+      ② 模块内模板字符串中动态生成的 onclick（今日列表、档案列表等）
+    """
+    src = open(os.path.join(ROOT, '03-PWA', 'index.html'), encoding='utf-8').read()
+    parts = src.split('<script type="module">')
+    html_part = parts[0]
+    mod_part = parts[1] if len(parts) > 1 else ''
+
+    needed = set()
+    for m in re.finditer(r'on(?:click|change|input)="([a-zA-Z_$][\w$]*)\s*\(', html_part):
+        needed.add(m.group(1))
+    for m in re.finditer(r"onclick=\\?[\"']([a-zA-Z_$][\w$]*)\(", mod_part):
+        needed.add(m.group(1))
+    return sorted(needed)
+
+
+REQUIRED_GLOBALS = required_globals()
 
 
 def run_probe(url, script, timeout=90, profile='smoke'):

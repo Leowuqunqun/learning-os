@@ -1491,7 +1491,7 @@ function guidePrev() { if (gIdx > 0) { gIdx--; guideRender(); } }
 /* ---------- 暴露给 inline onclick（module 作用域默认不挂 window） ---------- */
 Object.assign(window, {
   addCard, addErr, delCard, delErr, delKid, editKid, errDone,
-  exportData, go, resetAll, saveKid, startReview, reviewOne,
+  exportData, importData, go, resetAll, saveKid, startReview, reviewOne,
   switchKid, toggleKidForm,
   guideOpen, guideClose, guideNext, guidePrev, renderWeek, renderStats,
   speakPhrases, speakDaily, stopSpeak, toggleTtsAuto, syncTtsAutoCheckbox, warmUpVoices,
