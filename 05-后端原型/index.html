@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>后端方案对比 · 最小可用版</title>
+<style>
+:root{--bg:#f8fafc;--fg:#0f172a;--muted:#64748b;--card:#fff;--line:#e2e8f0;
+ --brand:#2563eb;--ok:#16a34a;--warn:#ea580c;--danger:#dc2626;--soft:#eff6ff}
+@media(prefers-color-scheme:dark){:root{--bg:#0b1220;--fg:#e2e8f0;--muted:#94a3b8;
+ --card:#131c2e;--line:#1e293b;--brand:#60a5fa;--soft:#1e293b}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);
+ font:15px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+main{max-width:780px;margin:0 auto;padding:20px 16px 60px}
+h1{font-size:21px;margin:0 0 4px}
+.lead{color:var(--muted);font-size:13.5px;margin:0 0 18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px}
+.card h2{margin:0 0 10px;font-size:15.5px}
+label{display:block;font-size:12.5px;color:var(--muted);margin:10px 0 4px;font-weight:600}
+input,select,textarea{width:100%;font:inherit;font-size:15px;padding:10px;border:1px solid var(--line);
+ border-radius:9px;background:var(--bg);color:var(--fg)}
+textarea{min-height:62px;resize:vertical}
+button{font:inherit;font-size:14.5px;font-weight:600;padding:11px 16px;border-radius:9px;
+ border:0;background:var(--brand);color:#fff;cursor:pointer;min-height:44px}
+button:active{transform:scale(.98)}
+button.ghost{background:transparent;color:var(--brand);border:1.5px solid var(--brand)}
+button.sm{padding:7px 12px;min-height:36px;font-size:13.5px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.mode{display:flex;gap:8px;margin-bottom:14px}
+.mode button{flex:1}
+.mode button.on{background:var(--brand);color:#fff}
+.mode button:not(.on){background:var(--card);color:var(--muted);border:1.5px solid var(--line)}
+.pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11.5px;font-weight:700;
+ background:var(--soft);color:var(--brand)}
+.pill.ok{background:#dcfce7;color:var(--ok)}
+.pill.warn{background:#ffedd5;color:var(--warn)}
+.pill.off{background:#f1f5f9;color:var(--muted)}
+@media(prefers-color-scheme:dark){.pill.ok{background:#052e16}.pill.warn{background:#431407}.pill.off{background:#1e293b}}
+.item{display:flex;justify-content:space-between;align-items:center;gap:10px;
+ padding:10px 0;border-bottom:1px solid var(--line)}
+.item:last-child{border-bottom:0}
+.item .t{font-size:14.5px;font-weight:600}
+.item .m{font-size:12px;color:var(--muted);margin-top:2px}
+.empty{text-align:center;color:var(--muted);font-size:13.5px;padding:22px 10px}
+#log{font:11.5px/1.65 ui-monospace,Menlo,monospace;background:#0f172a;color:#a7f3d0;
+ padding:11px;border-radius:9px;max-height:190px;overflow:auto;white-space:pre-wrap}
+.diff{font-size:13px;line-height:1.75}
+.diff b{color:var(--fg)}
+.note{background:var(--soft);border-left:3px solid var(--brand);padding:9px 12px;
+ border-radius:0 8px 8px 0;font-size:13px;margin:10px 0}
+</style>
+</head>
+<body>
+<main>
+  <h1>后端方案对比 · 最小可用版</h1>
+  <p class="lead">同一份前端代码，切换数据层即可换后端。这就是"契约解耦"的意义。</p>
+
+  <div class="mode">
+    <button id="mA" class="on" onclick="switchMode('A')">A · 仅本地（零后端）</button>
+    <button id="mB" onclick="switchMode('B')">B · 云端 D1（多家庭）</button>
+  </div>
+
+  <div class="card">
+    <h2>当前后端状态</h2>
+    <div id="status"></div>
+  </div>
+
+  <div class="card" id="loginBox" hidden>
+    <h2>方案 B：需要后端</h2>
+    <label>后端地址（Cloudflare Worker）</label>
+    <input id="apiBase" placeholder="https://learnos-api.xxx.workers.dev">
+    <label>家庭码</label>
+    <input id="familyCode" placeholder="例如 FAM-1234">
+    <div class="row" style="margin-top:12px">
+      <button onclick="doLogin()">登录</button>
+    </div>
+    <div class="note">还没有后端？没关系——切到方案 A 就能完整跑通所有功能。</div>
+  </div>
+
+  <div class="card">
+    <h2>孩子档案</h2>
+    <label>昵称（合规：不要填真实姓名）</label>
+    <input id="nick" placeholder="例：老大">
+    <label>学段</label>
+    <select id="stage">
+      <option value="low">小学低段（1-3）</option>
+      <option value="high">小学高段（4-6）</option>
+      <option value="mid">初中</option>
+      <option value="senior">高中</option>
+    </select>
+    <div id="consentWrap" style="margin-top:10px">
+      <label style="display:flex;gap:8px;align-items:center;font-weight:500;color:var(--fg)">
+        <input type="checkbox" id="consent" style="width:auto">
+        <span style="font-size:13.5px">我是家长/监护人，同意创建学习档案</span>
+      </label>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button onclick="saveKid()">保存档案</button>
+      <button class="ghost sm" onclick="showConsent()">查看收集说明</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>新建知识卡</h2>
+    <label>正面（写问题，比写名词有效）</label>
+    <input id="cFront" placeholder="例：为什么 1/2 = 2/4？">
+    <label>背面（孩子自己的解释）</label>
+    <textarea id="cBack" placeholder="用自己的话讲一遍"></textarea>
+    <div class="row" style="margin-top:12px"><button onclick="addCard()">添加</button></div>
+  </div>
+
+  <div class="card">
+    <h2>知识卡 <span class="pill" id="nCards">0</span></h2>
+    <div id="cards"></div>
+  </div>
+
+  <div class="card">
+    <h2>记录错题</h2>
+    <label>题目</label>
+    <input id="eq" placeholder="3/4 + 1/6">
+    <label>我当时是怎么想的（最重要）</label>
+    <input id="eThink" placeholder="我直接分子加分子了">
+    <div class="row" style="margin-top:12px"><button onclick="addErr()">记录</button></div>
+  </div>
+
+  <div class="card">
+    <h2>错题 <span class="pill" id="nErrs">0</span></h2>
+    <div id="errs"></div>
+  </div>
+
+  <div class="card">
+    <h2>合规操作</h2>
+    <div class="row">
+      <button class="ghost sm" onclick="doExport()">导出全部数据</button>
+      <button class="ghost sm" onclick="doDelete()" style="color:var(--danger);border-color:var(--danger)">彻底删除档案</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>操作日志 <span class="pill off">实时</span></h2>
+    <div id="log">等待操作…</div>
+  </div>
+
+  <div class="card">
+    <h2>两个方案到底差在哪</h2>
+    <div class="diff">
+      <p><b>A · 仅本地</b>：数据存浏览器。<br>
+      ✅ 零成本、断网可用、零合规风险、现在就能上线<br>
+      ❌ 你看不到任何数据、换设备就丢、无法多人协作</p>
+      <p><b>B · 云端 D1</b>：数据存 Cloudflare。<br>
+      ✅ 多设备同步、你能看到使用情况、可做家长端<br>
+      ❌ 需要后端（约 1-2 周）、有合规责任、免费额度有限</p>
+      <p class="note" style="margin-bottom:0">关键：<b>前端代码完全一样</b>。
+      所以你可以先上 A 验证方法有效性，需要时再切 B——不用重写。</p>
+    </div>
+  </div>
+</main>
+
+<script type="module">
+import { LocalAdapter } from './A-仅本地/local-adapter.js';
+import { HttpAdapter } from './B-云端D1/http-adapter.js';
+import { isDue } from './contract.js';
+
+let mode = 'A';
+let adapter = new LocalAdapter();
+let kidId = null;
+
+const $ = id => document.getElementById(id);
+const el = {};
+['status','loginBox','apiBase','familyCode','nick','stage','consent','consentWrap',
+ 'cFront','cBack','nCards','cards','eq','eThink','nErrs','errs','log'].forEach(i=>el[i]=$(i));
+
+function log(msg, kind='info') {
+  const t = new Date().toLocaleTimeString('zh-CN');
+  const icon = {info:'·',ok:'✅',err:'❌',warn:'⚠️'}[kind] || '·';
+  el.log.textContent = `[${t}] ${icon} ${msg}\n` + el.log.textContent;
+  el.log.textContent = el.log.textContent.split('\n').slice(0,40).join('\n');
+}
+
+function switchMode(m) {
+  mode = m;
+  $('mA').classList.toggle('on', m==='A');
+  $('mB').classList.toggle('on', m==='B');
+  el.loginBox.hidden = (m === 'A');
+  if (m === 'A') {
+    adapter = new LocalAdapter();
+    kidId = localStorage.getItem('learnos.kid.A') || null;
+    log('切换到方案 A：数据存本机浏览器', 'ok');
+  } else {
+    const base = localStorage.getItem('learnos.apiBase') || '';
+    const token = localStorage.getItem('learnos.token') || '';
+    el.apiBase.value = base;
+    if (base) { adapter = new HttpAdapter(base, token); log('已载入后端地址（未验证）', 'warn'); }
+    else { log('方案 B 需要先填后端地址并登录', 'warn'); }
+    kidId = localStorage.getItem('learnos.kid.B') || null;
+  }
+  renderStatus(); refresh();
+}
+
+function renderStatus() {
+  const rows = [];
+  if (mode === 'A') {
+    rows.push(`<span class="pill ok">运行中</span> LocalAdapter · localStorage`);
+    rows.push(`<div class="m" style="font-size:12.5px;color:var(--muted);margin-top:6px">
+      数据不出本机 · 断网可用 · 零成本</div>`);
+  } else if (!adapter) {
+    rows.push(`<span class="pill warn">未连接</span> 请填写后端地址并登录`);
+  } else {
+    const pend = adapter.pending?.length || 0;
+    rows.push(`<span class="pill ok">已连接</span> HttpAdapter · ${adapter.base}`);
+    if (pend) rows.push(`<span class="pill warn" style="margin-left:6px">${pend} 条待同步（离线期间写入）</span>`);
+  }
+  rows.push(`<div style="margin-top:8px;font-size:13px">当前档案：<b>${kidId || '未创建'}</b></div>`);
+  el.status.innerHTML = rows.join('');
+}
+
+/* ---------- 交互 ---------- */
+window.switchMode = switchMode;
+
+window.doLogin = async () => {
+  const base = el.apiBase.value.trim();
+  const code = el.familyCode.value.trim();
+  if (!base || !code) { log('后端地址和家庭码都要填', 'err'); return; }
+  try {
+    const res = await fetch(base + '/api/login', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ familyCode: code }),
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + await res.text());
+    const j = await res.json();
+    localStorage.setItem('learnos.apiBase', base);
+    localStorage.setItem('learnos.token', j.token);
+    adapter = new HttpAdapter(base, j.token);
+    log('登录成功，已连接云端', 'ok');
+    renderStatus(); refresh();
+  } catch (e) { log('登录失败：' + e.message, 'err'); }
+};
+
+window.saveKid = async () => {
+  const nickname = el.nick.value.trim();
+  if (!nickname) { log('昵称必填', 'err'); return; }
+  if (mode === 'B' && !el.consent.checked) { log('方案 B 必须勾选家长同意', 'err'); return; }
+  if (!adapter || (mode === 'B' && !adapter.base)) { log('先连接后端', 'err'); return; }
+  try {
+    const k = await adapter.saveKid({
+      nickname, stage: el.stage.value,
+      consent: el.consent.checked, id: kidId || undefined,
+    });
+    kidId = k.id;
+    localStorage.setItem('learnos.kid.' + mode, kidId);
+    log(`档案已保存：${nickname}（${kidId}）`, 'ok');
+    renderStatus();
+  } catch (e) { log('保存失败：' + e.message, 'err'); }
+};
+
+window.showConsent = async () => {
+  if (mode === 'B' && adapter?.base) {
+    try { const r = await adapter._req('GET','/api/consent-notice');
+      alert('收集：' + r.collects.join('、') + '\n\n绝不收集：' + r.neverCollects.join('、') +
+            '\n\n你的权利：' + r.rights.join('\n· ')); return; }
+    catch(e){ log('取说明失败：'+e.message,'err'); }
+  }
+  alert('【本地方案】\n所有数据只存在这台设备的浏览器里。\n不联网、不上传、无第三方可见。\n清空浏览器数据会一并清除，请定期导出备份。');
+};
+
+window.addCard = async () => {
+  if (!kidId) { log('先创建档案', 'err'); return; }
+  const front = el.cFront.value.trim(), back = el.cBack.value.trim();
+  if (!front || !back) { log('正反面都要填', 'err'); return; }
+  try {
+    await adapter.addCard(kidId, { front, back, subject:'数学' });
+    el.cFront.value=''; el.cBack.value='';
+    log('卡片已添加，明天开始复习', 'ok'); refresh();
+  } catch (e) { log('添加失败（已离线排队）：' + e.message, 'warn'); refresh(); }
+};
+
+window.addErr = async () => {
+  if (!kidId) { log('先创建档案', 'err'); return; }
+  const q = el.eq.value.trim();
+  if (!q) { log('题目必填', 'err'); return; }
+  try {
+    await adapter.addError(kidId, { question:q, thinking: el.eThink.value.trim(), type:'概念不懂' });
+    el.eq.value=''; el.eThink.value='';
+    log('错题已记录，D3 重做', 'ok'); refresh();
+  } catch (e) { log('记录失败（已离线排队）：' + e.message, 'warn'); refresh(); }
+};
+
+window.grade = async (id, remembered) => {
+  try { await adapter.gradeCard(kidId, id, remembered);
+    log(remembered ? '答对，间隔延长' : '答错，回退两档', remembered?'ok':'warn'); refresh();
+  } catch(e){ log('失败：'+e.message,'err'); }
+};
+
+window.resolveErr = async (id) => {
+  try { const r = await adapter.resolveError(kidId, id);
+    log(r.archived ? '做对 3 次，已归档 👍' : `做对，下次 ${r.due}`, 'ok'); refresh();
+  } catch(e){ log('失败：'+e.message,'err'); }
+};
+
+window.doExport = async () => {
+  if (!kidId) { log('先创建档案','err'); return; }
+  try {
+    const d = await adapter.exportAll(kidId);
+    const blob = new Blob([JSON.stringify(d,null,2)],{type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `学习数据-${kidId}.json`; a.click();
+    log('已导出（合规：数据可携带）', 'ok');
+  } catch(e){ log('导出失败：'+e.message,'err'); }
+};
+
+window.doDelete = async () => {
+  if (!kidId) return;
+  if (!confirm('彻底删除该档案的全部数据？不可恢复。')) return;
+  try {
+    await adapter.deleteAll(kidId);
+    localStorage.removeItem('learnos.kid.' + mode);
+    log('已彻底删除（合规：数据可删除）', 'ok');
+    kidId = null; renderStatus(); refresh();
+  } catch(e){ log('删除失败：'+e.message,'err'); }
+};
+
+/* ---------- 渲染 ---------- */
+async function refresh() {
+  if (!kidId || !adapter) {
+    el.cards.innerHTML = '<div class="empty">还没有档案</div>';
+    el.errs.innerHTML = '<div class="empty">还没有档案</div>';
+    el.nCards.textContent = el.nErrs.textContent = '0';
+    return;
+  }
+  try {
+    const [cards, errs] = await Promise.all([
+      adapter.listCards(kidId), adapter.listErrors(kidId),
+    ]);
+    el.nCards.textContent = cards.length;
+    el.nErrs.textContent = errs.filter(e=>!e.archived).length;
+
+    el.cards.innerHTML = cards.length ? cards.map(c=>{
+      const due = (c.due ?? c.due) <= new Date().toISOString().slice(0,10);
+      return `<div class="item"><div style="flex:1;min-width:0">
+        <div class="t">${esc(c.front)}</div>
+        <div class="m">step ${c.step} · 下次 ${c.due} ${due?'<span class="pill warn">待复习</span>':''}</div>
+      </div><div class="row" style="gap:6px">
+        <button class="sm" onclick="grade('${c.id}',true)">记住了</button>
+        <button class="sm ghost" onclick="grade('${c.id}',false)">忘了</button>
+      </div></div>`;
+    }).join('') : '<div class="empty">还没有卡片</div>';
+
+    el.errs.innerHTML = errs.length ? errs.map(e=>`
+      <div class="item" style="${e.archived?'opacity:.5':''}"><div style="flex:1;min-width:0">
+        <div class="t">${esc(e.question)}</div>
+        <div class="m">${esc(e.thinking||'')} · ${e.round}/3 次 · ${e.archived?'已归档':'下次 '+e.due}</div>
+      </div>${!e.archived?`<button class="sm" onclick="resolveErr('${e.id}')">做对了</button>`:''}</div>
+    `).join('') : '<div class="empty">还没有错题</div>';
+  } catch (e) { log('读取失败：' + e.message, 'err'); }
+}
+
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+
+/* ---------- 启动 ---------- */
+switchMode('A');
+log('就绪。方案 A 可立即使用；方案 B 需先部署 Worker。');
+</script>
+</body>
+</html>

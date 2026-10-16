@@ -1,0 +1,12 @@
+name = "learnos-api"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+
+# D1 绑定：先执行 wrangler d1 create learnos-db，把返回的 id 填到这里
+[[d1_databases]]
+binding = "DB"
+database_name = "learnos-db"
+database_id = "REPLACE_WITH_YOUR_D1_ID"
+
+# 免费额度（Workers Free）：
+#   行读 500 万/天 · 行写 10 万/天 · 存储 5GB
