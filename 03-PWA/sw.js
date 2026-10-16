@@ -2,7 +2,7 @@
    策略：预缓存全部静态资源 → 完全离线可用。
    这是"教育平权"的硬要求：断网后核心功能不能失效。 */
 
-const CACHE = 'learnos-v12';
+const CACHE = 'learnos-v13';
 const ASSETS = [
   './',
   './index.html',
