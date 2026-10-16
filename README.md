@@ -131,6 +131,23 @@ cd 03-PWA && python3 -m http.server 8080
 
 ---
 
+## 怎么验证这套东西真的能用
+
+```bash
+cd ~/教育平权项目
+bash tools/check-all.sh            # 全部 10 套检查（约 70 秒）
+bash tools/check-all.sh --quick    # 仅静态检查（约 0.1 秒）
+```
+
+覆盖：设计红线、证据口径、可达性、数据迁移、冒烟（应用可用性）、
+手机适配、Safari 引擎、离线可用、低带宽加载、线上部署。
+
+**退出码 0 = 全通过，1 = 有失败并列出失败项。**
+
+详见 [`tools/README.md`](tools/README.md)。
+
+---
+
 ## 当前状态
 
 - ✅ 方法论（总纲 / 执行手册 / 学段适配 / 打印版）
