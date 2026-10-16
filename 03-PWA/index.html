@@ -702,7 +702,12 @@ function renderToday(){
   const box=document.getElementById('dueList');
   let h='';
   if(!due.length&&!errs.length){
-    h='<div class="empty">今天没有待复习的，很好 👌<br>可以新建一张知识卡，或去"方法"看看。</div>';
+    if (!kidId) {
+      h = '<div class="empty">还没有孩子档案。<br>建一个就能开始记录了。' +
+          '<div style="margin-top:12px"><button class="btn sm" onclick="startAddKid()">＋ 添加孩子</button></div></div>';
+    } else {
+      h = '<div class="empty">今天没有待复习的，很好 👌<br>可以新建一张知识卡，或去"方法"看看。</div>';
+    }
   }else{
     if(due.length)h+=due.map(c=>`<div class="item"><div style="flex:1;min-width:0">
       <div class="t">${esc(c.front)}</div><div class="m">${esc(c.sub)}</div></div>
@@ -826,6 +831,11 @@ const STAGE_DESC={low:'小学低段：家长是陪玩者，重点是把学习变
   high:'小学高段：家长是教练，重点是建立间隔复习习惯',
   mid:'初中：家长是管理者，重点是教计划而非催',
   senior:'高中：家长是后勤，重点是情绪稳定'};
+
+function startAddKid() {
+  go('more', document.querySelector('nav button[data-v="more"]'));
+  setTimeout(() => { toggleKidForm(true); }, 120);
+}
 
 function toggleKidForm(open){
   const f=document.getElementById('kidForm');
@@ -1007,7 +1017,8 @@ function renderWeek() {
   const box = document.getElementById('weekStats');
   if (!box) return;
   if (!kidId) {
-    box.innerHTML = '<div class="empty">添加孩子后开始记录</div>';
+    box.innerHTML = '<div class="empty">添加孩子后开始记录' +
+      '<div style="margin-top:12px"><button class="btn sm" onclick="startAddKid()">＋ 添加孩子</button></div></div>';
     return;
   }
 
@@ -1479,7 +1490,7 @@ function guidePrev() { if (gIdx > 0) { gIdx--; guideRender(); } }
 Object.assign(window, {
   addCard, addErr, delCard, delErr, delKid, editKid, errDone,
   exportData, importData, go, resetAll, saveKid, startReview, reviewOne,
-  switchKid, toggleKidForm,
+  switchKid, toggleKidForm, startAddKid,
   guideOpen, guideClose, guideNext, guidePrev, renderWeek, renderStats,
   speakPhrases, speakDaily, stopSpeak, toggleTtsAuto, syncTtsAutoCheckbox, warmUpVoices,
   reviewReveal, reviewGrade, reviewQuit,

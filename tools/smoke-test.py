@@ -342,6 +342,10 @@ setTimeout(async () => {
     click('开始使用'); await sleep(500);
     R.guideClosed = q('guide').hidden;
 
+    // 先看今日页空状态有没有「直达建档」按钮
+    R.directBtn = !![...document.querySelectorAll('#dueList button')]
+      .find(b => b.textContent.includes('添加孩子'));
+
     navTo('更多'); await sleep(400);
     click('添加孩子'); await sleep(400);
     R.formOpen = !q('kidForm').hidden;
@@ -383,6 +387,8 @@ setTimeout(async () => {
         check('★新用户看到引导', d.get('guideShown') is True)
         check('引导可走完', d.get('atLast') == '4 / 4', d.get('atLast'))
         check('引导可关闭', d.get('guideClosed') is True)
+        check('★空状态有「添加孩子」直达按钮', d.get('directBtn') is True,
+              '新用户若不点导航就不知道去哪建档')
         check('★能建孩子档案', d.get('kids') == 1, d.get('kids'))
         check('★能添加知识卡', d.get('cards') == '1', d.get('cards'))
         check('★能记录错题', d.get('errs') == '1', d.get('errs'))

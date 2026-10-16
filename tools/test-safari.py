@@ -172,7 +172,9 @@ def main():
                 # 进一步确认存储功能可用（这是 structuredClone 降级的关键路径）
                 page2.locator('nav button', has_text='更多').click()
                 page2.wait_for_timeout(500)
-                page2.locator('button', has_text='添加孩子').click()
+                # 用 id 选择器：页面上有 3 个「添加孩子」按钮（今日/本周/更多页），
+                # 按文案选会因歧义报 strict mode violation
+                page2.locator('#kidFormBtn').click()
                 page2.wait_for_timeout(500)
                 page2.fill('#kidName', '旧机娃')
                 page2.locator('button', has_text='保存').first.click()
