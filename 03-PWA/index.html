@@ -214,8 +214,13 @@ details .body li{margin:5px 0}
   <!-- 设置 -->
   <section id="v-more" class="view">
     <div class="card">
-      <h2>孩子档案</h2>
-      <label>名字 / 昵称</label>
+      <h2>孩子档案 <span class="pill" id="kidCount">0</span></h2>
+      <div id="kidList"></div>
+      <div style="margin-top:12px"><button class="btn" onclick="toggleKidForm()" id="kidFormBtn">＋ 添加孩子</button></div>
+    </div>
+    <div class="card" id="kidForm" hidden>
+      <h2 id="kidFormTitle">添加孩子</h2>
+      <label>昵称（建议不要填真实姓名）</label>
       <input id="kidName" placeholder="例：老大">
       <label>学段</label>
       <select id="kidStage">
@@ -224,7 +229,10 @@ details .body li{margin:5px 0}
         <option value="mid">初中（7-9年级）</option>
         <option value="senior">高中（10-12年级）</option>
       </select>
-      <div style="margin-top:14px"><button class="btn" onclick="saveKid()">保存</button></div>
+      <div class="row" style="margin-top:14px">
+        <button class="btn" onclick="saveKid()">保存</button>
+        <button class="btn ghost sm" onclick="toggleKidForm()">取消</button>
+      </div>
       <div id="kidState" class="muted" style="margin-top:10px"></div>
     </div>
     <div class="card">
@@ -254,7 +262,10 @@ details .body li{margin:5px 0}
 </nav>
 <div class="toast" id="toast"></div>
 
-<script>
+<script type="module">
+import { LocalAdapter } from './local-adapter.js';
+import { runMigration, migrate } from './migrate.js';
+
 /* ---------- 元素引用：显式获取，不依赖浏览器 ID 全局变量 ---------- */
 const $=id=>document.getElementById(id);
 const EL={};
@@ -269,17 +280,56 @@ const sDue=EL.sDue, sCards=EL.sCards, sErr=EL.sErr,
       kidName=EL.kidName, kidStage=EL.kidStage, kidState=EL.kidState,
       dailyFlow=EL.dailyFlow;
 
-/* ---------- 存储层：localStorage，离线优先 ---------- */
-const KEY='learnos.v1';
-const DEF={cards:[],errs:[],kid:{name:'',stage:'low'}};
-let DB=load();
+/* ---------- 存储层：统一走 LocalAdapter（A 方案），含旧数据迁移 ---------- */
+// 注意：必须【先迁移、后构造 adapter】。
+// LocalAdapter 在构造时就从 localStorage 读取，
+// 若顺序反了，迁移写入的数据不会被读到（曾踩过这个坑）。
+let adapter = null;
+let kidId = null;              // 当前孩子
+let DB = { cards: [], errs: [] };  // 当前孩子的视图缓存（渲染用）
+let editingKidId = null;       // 正在编辑的档案（null=新建）
 
-function load(){
-  try{const r=localStorage.getItem(KEY);if(!r)return structuredClone(DEF);
-    const d=JSON.parse(r);return Object.assign(structuredClone(DEF),d);}
-  catch(e){return structuredClone(DEF);}
+/** 启动时：先迁移旧数据，再确定当前孩子 */
+function bootStore() {
+  // 1. 先迁移旧格式（幂等，已迁移过则跳过）——必须在构造 adapter 之前
+  const mig = runMigration(localStorage);
+  if (mig.migrated) {
+    console.log('[迁移] 旧数据已迁移：', mig.counts);
+    setTimeout(() => toast(`已迁移 ${mig.counts.cards} 张卡片、${mig.counts.errors} 道错题`), 800);
+  } else if (mig.reason && mig.reason.startsWith('迁移失败')) {
+    setTimeout(() => toast('旧数据迁移失败，已保留原数据'), 800);
+  }
+
+  // 2. 迁移完成后才构造 adapter（它会读取刚写入的数据）
+  adapter = new LocalAdapter();
+
+  // 3. 确定当前孩子
+  const saved = localStorage.getItem('learnos.currentKid');
+  const kids = Object.values(adapter.db.kids || {});
+  if (saved && adapter.db.kids[saved]) kidId = saved;
+  else if (kids.length) kidId = kids[0].id;
+  else kidId = null;
 }
-function save(){try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){toast('存储空间不足');}}
+
+/** 从适配器把当前孩子的数据读进视图缓存 */
+async function loadDB() {
+  if (!kidId) { DB = { cards: [], errs: [] }; return; }
+  const [cards, errs] = await Promise.all([
+    adapter.listCards(kidId), adapter.listErrors(kidId),
+  ]);
+  // 适配器字段 → 视图字段（保持渲染代码简洁）
+  DB = {
+    cards: cards.map(c => ({ ...c, sub: c.subject, ok: c.okCount })),
+    errs: errs.map(e => ({ ...e, q: e.question, think: e.thinking, done: e.archived })),
+  };
+}
+
+function switchKid(id) {
+  kidId = id;
+  localStorage.setItem('learnos.currentKid', id);
+  loadDB().then(() => { renderAll(); toast('已切换：' + (adapter.db.kids[id]?.nickname || id)); });
+}
+
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');
   clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1700);}
 
@@ -309,25 +359,30 @@ function go(v,el){
 }
 
 /* ---------- 知识卡 ---------- */
-function addCard(){
+async function addCard(){
   const f=cFront.value.trim(),b=cBack.value.trim();
   if(!f||!b)return toast('正反面都要填');
-  DB.cards.push({id:Date.now()+''+Math.random().toString(36).slice(2,6),
-    front:f,back:b,sub:cSub.value,step:0,due:today(),ok:0});
-  save();cFront.value='';cBack.value='';renderCards();renderToday();
+  if(!kidId)return toast('请先在「更多」里添加孩子');
+  await adapter.addCard(kidId,{front:f,back:b,subject:cSub.value});
+  cFront.value='';cBack.value='';
+  await loadDB();renderCards();renderToday();
   toast('已添加，明天开始复习');
 }
-function cardOK(id){
-  const c=DB.cards.find(x=>x.id===id);if(!c)return;
-  c.step++;c.ok++;c.due=nextDue(c.step);save();
-  renderCards();renderToday();toast('记住了 · 下次 '+c.due);
+async function cardOK(id){
+  await adapter.gradeCard(kidId,id,true);
+  await loadDB();renderCards();renderToday();
+  const c=DB.cards.find(x=>x.id===id);
+  toast('记住了 · 下次 '+c.due);
 }
-function cardFail(id){
-  const c=DB.cards.find(x=>x.id===id);if(!c)return;
-  c.step=Math.max(0,c.step-2);c.due=nextDue(c.step);save();
-  renderCards();renderToday();toast('没关系 · 明天再来');
+async function cardFail(id){
+  await adapter.gradeCard(kidId,id,false);
+  await loadDB();renderCards();renderToday();
+  toast('没关系 · 明天再来');
 }
-function delCard(id){DB.cards=DB.cards.filter(x=>x.id!==id);save();renderCards();renderToday();}
+async function delCard(id){
+  await adapter.deleteCard(kidId,id);
+  await loadDB();renderCards();renderToday();
+}
 
 function renderCards(){
   const box=document.getElementById('cardList');
@@ -345,23 +400,24 @@ function renderCards(){
 
 /* ---------- 错题 ---------- */
 const ERR_STEPS=[3,7,15];
-function addErr(){
+async function addErr(){
   const q=eQ.value.trim(),th=eThink.value.trim();
   if(!q)return toast('至少填题目');
-  DB.errs.push({id:Date.now()+''+Math.random().toString(36).slice(2,6),
-    q,think:th,gap:eGap.value.trim(),type:eType.value,
-    round:0,due:nextDue(ERR_STEPS[0]),done:false});
-  save();eQ.value='';eThink.value='';eGap.value='';
-  renderErrs();renderToday();toast('已记录 · D3 重做');
+  if(!kidId)return toast('请先在「更多」里添加孩子');
+  await adapter.addError(kidId,{question:q,thinking:th,gap:eGap.value.trim(),type:eType.value});
+  eQ.value='';eThink.value='';eGap.value='';
+  await loadDB();renderErrs();renderToday();
+  toast('已记录 · D3 重做');
 }
-function errDone(id){
-  const e=DB.errs.find(x=>x.id===id);if(!e)return;
-  e.round++;
-  if(e.round>=3){e.done=true;toast('连续做对 3 次 · 已归档 👍');}
-  else{e.due=nextDue(ERR_STEPS[e.round]);toast('做对了 · 下次 '+e.due);}
-  save();renderErrs();renderToday();
+async function errDone(id){
+  const r=await adapter.resolveError(kidId,id);
+  await loadDB();renderErrs();renderToday();
+  toast(r.archived ? '连续做对 3 次 · 已归档 👍' : '做对了 · 下次 '+r.due);
 }
-function delErr(id){DB.errs=DB.errs.filter(x=>x.id!==id);save();renderErrs();renderToday();}
+async function delErr(id){
+  await adapter.deleteError(kidId,id);
+  await loadDB();renderErrs();renderToday();
+}
 
 function renderErrs(){
   const box=document.getElementById('errList');
@@ -407,7 +463,8 @@ function renderToday(){
     mid:'1. 自主安排，家长只问"这周怎么排"<br>2. 作业<br>3. 系统复习（错题本 + 结构笔记）<br>4. 睡前 3 分钟复述<br>※ 手机放在另一个房间',
     senior:'1. 自主规划（家长不介入方法）<br>2. 真题驱动训练<br>3. 精准定位薄弱点<br>※ 睡眠是学习的一部分，不是对立的'
   };
-  dailyFlow.innerHTML=flow[DB.kid.stage]||flow.low;
+  const cur=adapter.db.kids[kidId];
+  dailyFlow.innerHTML=flow[cur?.stage]||flow.low;
 }
 function showAnswer(id){
   const c=DB.cards.find(x=>x.id===id);if(!c)return;
@@ -422,47 +479,150 @@ function startReview(){
   errDone(errs[0].id);
 }
 
-/* ---------- 档案 / 数据 ---------- */
-function saveKid(){
-  DB.kid={name:kidName.value.trim(),stage:kidStage.value};
-  save();showKid();renderToday();toast('已保存');
+/* ---------- 档案（多孩子） ---------- */
+const STAGE_DESC={low:'小学低段：家长是陪玩者，重点是把学习变游戏',
+  high:'小学高段：家长是教练，重点是建立间隔复习习惯',
+  mid:'初中：家长是管理者，重点是教计划而非催',
+  senior:'高中：家长是后勤，重点是情绪稳定'};
+
+function toggleKidForm(open){
+  const f=document.getElementById('kidForm');
+  const show = open===undefined ? f.hidden : open;
+  f.hidden = !show;
+  if(show){
+    editingKidId=null;
+    kidName.value='';kidStage.value='low';
+    document.getElementById('kidFormTitle').textContent='添加孩子';
+    document.getElementById('kidState').textContent='';
+    document.getElementById('kidFormBtn').textContent='＋ 添加孩子';
+    kidName.focus();
+  } else {
+    document.getElementById('kidFormBtn').textContent='＋ 添加孩子';
+  }
 }
-function showKid(){
-  kidName.value=DB.kid.name||'';kidStage.value=DB.kid.stage||'low';
-  const M={low:'小学低段：家长是陪玩者，重点是把学习变游戏',
-    high:'小学高段：家长是教练，重点是建立间隔复习习惯',
-    mid:'初中：家长是管理者，重点是教计划而非催',
-    senior:'高中：家长是后勤，重点是情绪稳定'};
-  kidState.textContent=DB.kid.name?('当前：'+DB.kid.name+' · '+M[DB.kid.stage]):'还没设置';
+
+function editKid(id){
+  const k=adapter.db.kids[id];if(!k)return;
+  toggleKidForm(true);
+  editingKidId=id;
+  kidName.value=k.nickname||'';kidStage.value=k.stage||'low';
+  document.getElementById('kidFormTitle').textContent='编辑：'+k.nickname;
+  document.getElementById('kidState').textContent=STAGE_DESC[k.stage]||'';
 }
-function exportData(){
-  const b=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
+
+async function saveKid(){
+  const nickname=kidName.value.trim();
+  if(!nickname)return toast('请填昵称');
+  const isNew=!editingKidId;
+  const saved=await adapter.saveKid({
+    id:editingKidId||undefined, nickname, stage:kidStage.value,
+  });
+  // 新建档案 → 自动切到新孩子；编辑现有档案 → 保持当前孩子不变
+  if(isNew||!kidId) kidId=saved.id;
+  localStorage.setItem('learnos.currentKid', kidId);
+  toggleKidForm(false);
+  await loadDB();renderAll();
+  toast(editingKidId?'已保存':'已添加：'+nickname);
+}
+
+async function delKid(id){
+  const k=adapter.db.kids[id];if(!k)return;
+  const n=(await adapter.listCards(id)).length;
+  if(!confirm(`删除「${k.nickname}」及其 ${n} 张卡片、全部错题？此操作不可恢复。`))return;
+  await adapter.deleteAll(id);
+  if(kidId===id){
+    const rest=Object.values(adapter.db.kids||{});
+    kidId=rest.length?rest[0].id:null;
+    if(kidId)localStorage.setItem('learnos.currentKid',kidId);
+    else localStorage.removeItem('learnos.currentKid');
+  }
+  await loadDB();renderAll();toast('已删除');
+}
+
+function renderKids(){
+  const box=document.getElementById('kidList');
+  const kids=Object.values(adapter.db.kids||{});
+  document.getElementById('kidCount').textContent=kids.length;
+  if(!kids.length){
+    box.innerHTML='<div class="empty">还没有孩子档案。<br>添加后就能记录知识卡和错题了。</div>';
+    return;
+  }
+  const esc2=esc;
+  box.innerHTML=kids.map(k=>{
+    const on=k.id===kidId;
+    return `<div class="item"><div style="flex:1;min-width:0">
+      <div class="t">${esc2(k.nickname)} ${on?'<span class="pill">当前</span>':''}</div>
+      <div class="m">${esc2(STAGE_DESC[k.stage]||k.stage)}</div>
+    </div><div class="row" style="gap:6px">
+      ${on?'':`<button class="btn sm" onclick="switchKid('${k.id}')">切换</button>`}
+      <button class="btn sm ghost" onclick="editKid('${k.id}')">改</button>
+      <button class="btn sm ghost" onclick="delKid('${k.id}')" style="color:var(--danger);border-color:var(--danger)">删</button>
+    </div></div>`;
+  }).join('');
+}
+
+/* ---------- 数据 ---------- */
+async function exportData(){
+  const all={exportedAt:new Date().toISOString(),version:2,kids:adapter.db.kids,cards:adapter.db.cards,errors:adapter.db.errors};
+  const b=new Blob([JSON.stringify(all,null,2)],{type:'application/json'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(b);
   a.download='学习OS备份-'+today()+'.json';a.click();
-  toast('已导出');
+  toast('已导出全部 '+Object.keys(adapter.db.kids||{}).length+' 个档案');
 }
 function importData(inp){
   const f=inp.files[0];if(!f)return;
   const r=new FileReader();
-  r.onload=()=>{try{DB=Object.assign(structuredClone(DEF),JSON.parse(r.result));
-    save();renderAll();toast('导入成功');}catch(e){toast('文件格式不对');}};
+  r.onload=async()=>{
+    try{
+      const d=JSON.parse(r.result);
+      // 兼容：v2（多档案）或 v1（单档案）
+      let incoming;
+      if(d.kids&&d.cards){ incoming={kids:d.kids,cards:d.cards,errors:d.errors||{}}; }
+      else { const m=migrate(d); incoming={kids:m.kids,cards:m.cards,errors:m.errors}; }
+      const nk=Object.keys(incoming.kids).length;
+      if(!confirm(`导入 ${nk} 个档案？将覆盖现有全部数据。`))return;
+      adapter.db=incoming;
+      adapter._save();
+      const rest=Object.values(incoming.kids);
+      kidId=rest.length?rest[0].id:null;
+      if(kidId)localStorage.setItem('learnos.currentKid',kidId);
+      await loadDB();renderAll();toast('导入成功');
+    }catch(e){toast('文件格式不对');}
+  };
   r.readAsText(f);inp.value='';
 }
-function resetAll(){
-  if(!confirm('确定清空所有数据？此操作不可恢复。'))return;
-  DB=structuredClone(DEF);save();renderAll();toast('已清空');
+async function resetAll(){
+  if(!confirm('确定清空全部数据？此操作不可恢复。'))return;
+  await adapter.wipe();
+  kidId=null;localStorage.removeItem('learnos.currentKid');
+  await loadDB();renderAll();toast('已清空');
 }
 function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
-function renderAll(){renderToday();renderCards();renderErrs();showKid();}
+function renderAll(){renderToday();renderCards();renderErrs();renderKids();}
 
 /* ---------- 离线 ---------- */
 function upOffline(){document.getElementById('offbar').hidden=navigator.onLine;}
 addEventListener('online',upOffline);addEventListener('offline',upOffline);
 upOffline();
 
+/* ---------- 暴露给 inline onclick（module 作用域默认不挂 window） ---------- */
+Object.assign(window, {
+  addCard, addErr, delCard, delErr, delKid, editKid, errDone,
+  exportData, go, resetAll, saveKid, showAnswer, startReview,
+  switchKid, toggleKidForm,
+});
+
 /* ---------- 启动 ---------- */
-renderAll();
+(async function boot(){
+  bootStore();               // 迁移旧数据 + 确定当前孩子
+  await loadDB();
+  renderAll();
+  if(!kidId){
+    // 首次使用：引导去建档案
+    setTimeout(()=>toast('先去「更多」添加孩子，就能开始记录了'), 600);
+  }
+})();
 if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}
 </script>
 </body>
