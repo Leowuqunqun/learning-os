@@ -142,6 +142,48 @@ def main():
             check('Service Worker 可用',
                   page.evaluate("('serviceWorker' in navigator)") is True)
 
+
+            print('\n【6】低配设备兼容性（模拟旧安卓/旧 WebView）')
+            # 项目红线之一是「低配设备可用」。
+            # structuredClone 是 2022 年才普及的 API，
+            # 旧设备上直接调用会让整个应用无法启动。
+            # 用**独立 context**，避免复用上一个页面的 localStorage
+            # （否则断言「档案数==1」会因残留数据而误判）
+            ctx2 = b.new_context(
+                viewport={'width': 390, 'height': 844},
+                device_scale_factor=3, is_mobile=True, has_touch=True)
+            page2 = ctx2.new_page()
+            errs2 = []
+            page2.on('pageerror', lambda e: errs2.append(str(e)))
+            page2.add_init_script("delete window.structuredClone;")
+            page2.goto(APP, wait_until='networkidle')
+            page2.wait_for_timeout(2500)
+            # 新页面同样会弹引导，先关掉再操作
+            if page2.locator('#guide').is_visible():
+                for _ in range(3):
+                    page2.get_by_role('button', name='下一步').click()
+                    page2.wait_for_timeout(200)
+                page2.get_by_role('button', name='开始使用').click()
+                page2.wait_for_timeout(500)
+            nav2 = page2.locator('nav button').count()
+            check('★无 structuredClone 时应用仍可启动', nav2 == 6 and not errs2,
+                  f'导航 {nav2}，错误 {errs2[:1]}')
+            if nav2 == 6 and not errs2:
+                # 进一步确认存储功能可用（这是 structuredClone 降级的关键路径）
+                page2.locator('nav button', has_text='更多').click()
+                page2.wait_for_timeout(500)
+                page2.locator('button', has_text='添加孩子').click()
+                page2.wait_for_timeout(500)
+                page2.fill('#kidName', '旧机娃')
+                page2.locator('button', has_text='保存').first.click()
+                page2.wait_for_timeout(1200)
+                cnt = page2.locator('#kidList .item').count()
+                saved = page2.evaluate(
+                    "!!localStorage.getItem('learnos.adapter.local.v1')")
+                check('★旧设备上仍能保存数据', cnt == 1 and saved,
+                      f'档案 {cnt}，已存储 {saved}')
+            ctx2.close()
+
             print('\n【5】布局')
             d = json.loads(page.evaluate(
                 "JSON.stringify({vw:document.documentElement.clientWidth,"

@@ -9,6 +9,26 @@ import {
   advanceCard, regressCard, resolveErrorOnce, makeId,
 } from '../contract.js';
 
+/**
+ * 安全深拷贝 —— 兼容不支持 structuredClone 的旧设备
+ *
+ * 为什么不用 structuredClone：
+ *   它是 Chrome 98+ / Safari 15.4+（2022 年）才有的 API。
+ *   本项目红线之一是「低配设备可用」，而大量旧安卓机 / 旧 WebView
+ *   低于此版本 —— 直接调用会抛 ReferenceError，
+ *   发生在构造函数里会导致**整个应用无法启动**。
+ *
+ * 降级方案：JSON 往返。对本项目的数据（纯 JSON：字符串/数字/布尔/数组/对象）
+ * 完全等价，且 ES5 就支持。structuredClone 能处理的 Map/Set/Date 等
+ * 本项目并不使用。
+ */
+function deepClone(obj) {
+  if (typeof structuredClone === 'function') {
+    try { return structuredClone(obj); } catch { /* 降级 */ }
+  }
+  return JSON.parse(JSON.stringify(obj));
+}
+
 const KEY = 'learnos.adapter.local.v1';
 
 const EMPTY = { kids: {}, cards: {}, errors: {} };
@@ -21,9 +41,9 @@ export class LocalAdapter {
   _load() {
     try {
       const raw = localStorage.getItem(KEY);
-      if (!raw) return structuredClone(EMPTY);
-      return Object.assign(structuredClone(EMPTY), JSON.parse(raw));
-    } catch { return structuredClone(EMPTY); }
+      if (!raw) return deepClone(EMPTY);
+      return Object.assign(deepClone(EMPTY), JSON.parse(raw));
+    } catch { return deepClone(EMPTY); }
   }
 
   _save() {
@@ -127,5 +147,5 @@ export class LocalAdapter {
   }
 
   /** 方案 A 特有：清空全部 */
-  async wipe() { this.db = structuredClone(EMPTY); this._save(); }
+  async wipe() { this.db = deepClone(EMPTY); this._save(); }
 }
