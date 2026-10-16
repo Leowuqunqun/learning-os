@@ -522,6 +522,7 @@ details .body li{margin:5px 0}
 <script type="module">
 import { LocalAdapter } from './local-adapter.js';
 import { runMigration, migrate } from './migrate.js';
+import { CARD_STEPS, todayStr } from './contract.js';
 
 /* ---------- 元素引用：显式获取，不依赖浏览器 ID 全局变量 ---------- */
 const $=id=>document.getElementById(id);
@@ -590,12 +591,16 @@ function switchKid(id) {
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');
   clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1700);}
 
-/* ---------- 间隔复习算法（SM-2 简化儿童版） ---------- */
-const STEPS=[0,2,4,7,15,30];      // 天
-function nextDue(step){const d=STEPS[Math.min(step,STEPS.length-1)];
-  const t=new Date();t.setDate(t.getDate()+d);return t.toISOString().slice(0,10);}
-function today(){return new Date().toISOString().slice(0,10);}
-function isDue(x){return x.due<=today();}
+/* ---------- 间隔复习算法 ----------
+   ⚠️ 重要：日期必须用「本地时区」，不能用 toISOString()！
+   toISOString() 返回 UTC。中国是 UTC+8，于是北京时间 0:00–8:00 期间
+   UTC 还停在前一天 —— 应用会认为「今天是昨天」，
+   表现为：凌晨做复习看不到今天该复习的卡、新建卡片日期算错。
+   正确实现统一放在 contract.js 的 todayStr()，此处直接复用，
+   避免两处实现漂移（之前就是各写一份，其中一份写错了）。 */
+const STEPS = CARD_STEPS;
+function today() { return todayStr(); }
+function isDue(x) { return x.due <= today(); }
 
 /* ---------- 视图切换 ---------- */
 function go(v,el){
@@ -990,8 +995,7 @@ function lastDays(n) {
   for (let i = n - 1; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
-    out.push(new Date(d.getTime() - d.getTimezoneOffset() * 60000)
-      .toISOString().slice(0, 10));
+    out.push(todayStr(d));
   }
   return out;
 }
@@ -1004,8 +1008,7 @@ function streakOf(list) {
   // 今天没做不算断（还有一整天），从昨天开始数
   if (!set.has(today())) d.setDate(d.getDate() - 1);
   for (;;) {
-    const key = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
-      .toISOString().slice(0, 10);
+    const key = todayStr(d);
     if (set.has(key)) { n++; d.setDate(d.getDate() - 1); }
     else break;
     if (n > 400) break;

@@ -94,3 +94,41 @@ python3 tools/verify-deploy.py --json   # 机器可读
    表现为 HTTP 0——看起来像部署问题，其实是脚本问题。
 2. **JS 的 MIME 是 `application/javascript`**，不是 `text/javascript`。
    写错期望值会产生假失败。
+
+## smoke-test.py
+
+**冒烟测试** —— 防「静默炸掉」。这是最重要的一套，建议每次改动后先跑它。
+
+```bash
+cd ~/教育平权项目 && python3 -m http.server 8150 &
+python3 tools/smoke-test.py
+```
+
+断言三件事：
+1. **无 JS 运行时错误**（含模块解析错误）
+2. **关键函数全部挂在 window**（少一个，对应按钮就是死的）
+3. **应用完成初始化**（数据加载 + DOM 渲染 + 核心交互可触发）
+
+### 为什么必须有它
+
+2026-10 出过一次致命 bug：重写复习流程时删掉 `showAnswer`，
+但 `Object.assign(window, {... showAnswer ...})` 的引用没清理。
+那行在**模块加载时执行**，抛 ReferenceError 中断整个模块，
+`bootStore`/`loadDB`/`renderAll` 全不执行。
+
+表现极具迷惑性：**localStorage 里数据完好，但界面显示「知识卡 0」**——
+像数据丢了，其实是代码没跑。
+
+当时四套审计全部漏掉：
+
+| 审计 | 盲区 |
+|---|---|
+| migrate.test.mjs | Node 环境，不加载 index.html |
+| audit-mobile.py | 只测布局，页面能渲染即通过 |
+| audit-reachability.py | 只测链接可达 |
+| verify-deploy.py | 只测 HTTP 200 + 内容关键字 |
+
+共同盲区：**都在验证「改动本身」，没有验证「改动有没有破坏别的」**。
+
+冒烟测试已通过反向验证：故意重新引入该 bug，它能准确捕获
+（报出 ReferenceError、24 个函数缺失、数据加载为 0）。
