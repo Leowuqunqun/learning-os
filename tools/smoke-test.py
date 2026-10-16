@@ -320,6 +320,74 @@ setTimeout(async () => {
     undef = sorted(h for h in handlers if h not in defined and h not in exported)
     check('★所有事件处理器都有对应函数', not undef, f'未定义: {undef}')
 
+
+    # ---------- 5. 冷启动用户旅程（完全按界面走，不注入数据） ----------
+    print('\n【5】冷启动旅程（新家庭首次使用能否走通）')
+    body5 = """<script>window.confirm=function(){return true};</script>
+<script type="module">
+setTimeout(async () => {
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const q = id => document.getElementById(id);
+  const click = t => { const b = [...document.querySelectorAll('button')]
+    .find(x => x.textContent.includes(t)); if (b) { b.click(); return true; } return false; };
+  const navTo = n => { const b = [...document.querySelectorAll('nav button')]
+    .find(x => x.textContent.includes(n)); if (b) b.click(); };
+  const R = {};
+  try {
+    R.guideShown = !q('guide').hidden;
+    click('下一步'); await sleep(250);
+    click('下一步'); await sleep(250);
+    click('下一步'); await sleep(250);
+    R.atLast = q('gStep').textContent;
+    click('开始使用'); await sleep(500);
+    R.guideClosed = q('guide').hidden;
+
+    navTo('更多'); await sleep(400);
+    click('添加孩子'); await sleep(400);
+    R.formOpen = !q('kidForm').hidden;
+    q('kidName').value = '旅程娃'; q('kidStage').value = 'high';
+    click('保存'); await sleep(800);
+    R.kids = document.querySelectorAll('#kidList .item').length;
+
+    navTo('知识卡'); await sleep(400);
+    q('cFront').value = '旅程问题'; q('cBack').value = '旅程答案';
+    click('添加'); await sleep(800);
+    R.cards = q('cardCount').textContent;
+
+    navTo('错题'); await sleep(400);
+    q('eQ').value = '旅程错题'; q('eThink').value = '想错了';
+    click('记录错题'); await sleep(800);
+    R.errs = q('errCount').textContent;
+
+    navTo('统计'); await sleep(600);
+    R.bars = document.querySelectorAll('#errDist .bar-row').length;
+
+    navTo('今日'); await sleep(500);
+    R.todayDue = q('sDue').textContent;
+
+    document.title = 'JOURNEY|' + JSON.stringify(R);
+  } catch (e) { document.title = 'JOURNEYERR|' + e.message; }
+}, 3000);
+</script>"""
+    fixture = make_fixture('journey', extra_body=body5)
+    try:
+        out = run_probe(f'{BASE}/03-PWA/{os.path.basename(fixture)}', None, profile='smoke-journey')
+    finally:
+        os.remove(fixture)
+
+    m = re.search(r'JOURNEY\|(.*)', out, re.S)
+    if not m:
+        check('冷启动旅程返回结果', False, out[:100])
+    else:
+        d = json.loads(m.group(1))
+        check('★新用户看到引导', d.get('guideShown') is True)
+        check('引导可走完', d.get('atLast') == '4 / 4', d.get('atLast'))
+        check('引导可关闭', d.get('guideClosed') is True)
+        check('★能建孩子档案', d.get('kids') == 1, d.get('kids'))
+        check('★能添加知识卡', d.get('cards') == '1', d.get('cards'))
+        check('★能记录错题', d.get('errs') == '1', d.get('errs'))
+        check('统计页有数据', (d.get('bars') or 0) >= 1, d.get('bars'))
+
     print('\n' + '=' * 72)
     if failed:
         print(f'通过 {passed} 项，失败 {failed} 项')
