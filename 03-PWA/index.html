@@ -210,8 +210,11 @@ details .body li{margin:5px 0}
       <div id="weekStats"></div>
     </div>
     <div class="card">
-      <h2>每日流程</h2>
+      <h2>每日流程 <button class="btn ghost sm" id="speakFlowBtn" onclick="speakDaily()" style="float:right;margin-top:-4px">🔊 念给我听</button></h2>
       <div class="big" id="dailyFlow"></div>
+      <p class="muted" style="font-size:12.5px;margin-top:8px">
+        不识字也能用：点上面的按钮，手机会把流程念出来。
+      </p>
     </div>
   </section>
 
@@ -269,6 +272,19 @@ details .body li{margin:5px 0}
       <h2>学习只有 4 个动作</h2>
       <div class="big">任何一次有效学习，拆到底只有 4 步。<br>整个体系就是围绕它们设计的。</div>
     </div>
+    <details open><summary>🔊 家长只需记住 3 句话（点这里听）</summary><div class="body">
+      <p>不识字也能用——点下面的按钮，手机会把这三句话念给你听。</p>
+      <div style="margin:10px 0">
+        <button class="btn" onclick="speakPhrases()" style="width:100%">🔊 念给我听</button>
+      </div>
+      <div class="g-box" style="border:1px solid var(--line);border-radius:11px;padding:12px;margin-top:10px">
+        <p style="font-size:17px;font-weight:650;margin:8px 0">「你讲给我听。」</p>
+        <p style="font-size:17px;font-weight:650;margin:8px 0">「你当时是怎么想的？」</p>
+        <p style="font-size:17px;font-weight:650;margin:8px 0">「这题问的是什么？」</p>
+      </div>
+      <p class="muted">这三句话不需要你会做题，爷爷奶奶也能照做。</p>
+    </div></details>
+
     <details><summary>先看这个：为什么"努力却没用"</summary><div class="body">
       <p>孩子不是懒，是在用一套<b>感觉有效</b>的方法。差距就在这里：</p>
       <div class="tw"><table>
@@ -400,6 +416,25 @@ details .body li{margin:5px 0}
         <a class="btn ghost sm" href="../01-方法论/打印版-零门槛.html" target="_blank" rel="noopener">零门槛打印版</a>
       </div>
       <p class="muted" style="font-size:12.5px;margin-top:10px">打开后按 ⌘P（或浏览器的打印）即可打印。</p>
+    </div>
+    <div class="card">
+      <h2>语音朗读</h2>
+      <p class="muted">家里有<b>不识字或看不清字</b>的老人带娃时，打开这个，
+      手机会把要点念出来。</p>
+      <label style="display:flex;gap:9px;align-items:center;margin-top:12px;
+                    font-size:15px;color:var(--fg);font-weight:500">
+        <input type="checkbox" id="ttsAuto" onchange="toggleTtsAuto(this)"
+               style="width:auto;transform:scale(1.25)">
+        <span>每次打开 App，自动朗读今日要点</span>
+      </label>
+      <div class="row" style="margin-top:12px">
+        <button class="btn ghost sm" onclick="speakPhrases()">🔊 试听：家长三句话</button>
+        <button class="btn ghost sm" onclick="stopSpeak()">停止</button>
+      </div>
+      <p class="muted" style="font-size:12.5px;margin-top:10px">
+        使用手机自带的语音，<b>不消耗流量、不用下载</b>。
+        若没声音，请检查手机是否静音。
+      </p>
     </div>
     <div class="card">
       <h2>使用引导</h2>
@@ -1048,6 +1083,135 @@ function renderStats() {
   `;
 }
 
+
+/* ---------- 语音朗读（给不识字的家长）----------
+   为什么用浏览器内置 TTS 而不是音频文件：
+   ① 零成本、零托管 —— 不需要服务器存 mp3
+   ② 零下载 —— 低带宽家庭不用等
+   ③ 离线可用 —— iOS/macOS/Android 都内置中文语音
+   实测：macOS 内置 184 个语音，含多个 zh_CN
+
+   注意：headless 环境 voices 为 0，真机才有。
+   所以必须做「无语音时优雅降级」而不是直接报错。 */
+
+let _voiceWarned = false;
+
+function ttsSupported() {
+  return typeof speechSynthesis !== 'undefined' && typeof SpeechSynthesisUtterance !== 'undefined';
+}
+
+/** 选一个中文语音；没有就返回 null 交给系统默认 */
+function pickZhVoice() {
+  try {
+    const vs = speechSynthesis.getVoices() || [];
+    return vs.find(v => /zh[-_]CN/i.test(v.lang))
+        || vs.find(v => /zh/i.test(v.lang))
+        || null;
+  } catch { return null; }
+}
+
+/** 朗读一段文字；返回是否成功发起 */
+function speak(text, { rate = 0.9 } = {}) {
+  if (!ttsSupported()) {
+    toast('这台设备不支持语音朗读');
+    return false;
+  }
+  try {
+    speechSynthesis.cancel();           // 避免叠读
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'zh-CN';
+    u.rate = rate;                       // 稍慢，方便老人听清
+    u.pitch = 1;
+    const v = pickZhVoice();
+    if (v) u.voice = v;
+    // 有些浏览器首次要等 voices 加载
+    if (!v && !_voiceWarned) {
+      _voiceWarned = true;
+      setTimeout(() => { const v2 = pickZhVoice(); if (v2) { /* 下次生效 */ } }, 500);
+    }
+    speechSynthesis.speak(u);
+    return true;
+  } catch (e) {
+    toast('语音朗读失败');
+    return false;
+  }
+}
+
+function stopSpeak() {
+  try { speechSynthesis.cancel(); } catch {}
+}
+
+/** 家长三句话 */
+function speakPhrases() {
+  speak('家长只需要记住三句话。第一句，你讲给我听。'
+      + '第二句，你当时是怎么想的。'
+      + '第三句，这题问的是什么。'
+      + '这三句话都不需要你会做题，爷爷奶奶也能照做。');
+}
+
+/** 当日流程（按学段不同） */
+function speakDaily(prefix) {
+  const cur = adapter?.db?.kids?.[kidId];
+  const stage = cur?.stage || 'low';
+  const texts = {
+    low: '今天的流程是。第一，放学先玩二十分钟，这是需要的，不是奖励。'
+       + '第二，作业十五到二十分钟，可以分成两段。'
+       + '第三，亲子阅读十五分钟，纯粹享受，不要考问。'
+       + '第四，睡前五分钟，口头复习，当成游戏。',
+    high: '今天的流程是。第一，放学先玩二十分钟。'
+        + '第二，作业前问一句，今天学了什么。'
+        + '第三，写作业，家长只问问题，不给答案。'
+        + '第四，复习十分钟，复习表打勾，错题重做。'
+        + '第五，睡前三分钟，让孩子当小老师，讲一个知识点。',
+    mid: '今天的流程是。第一，让孩子自己安排，家长只问，这周怎么排。'
+       + '第二，写作业。第三，系统复习，错题本加结构笔记。'
+       + '第四，睡前复述三分钟。注意，手机放在另一个房间。',
+    senior: '今天的流程是。第一，孩子自主规划，家长不介入方法。'
+          + '第二，真题驱动训练。第三，精准定位薄弱点。'
+          + '注意，睡眠是学习的一部分，不是对立的。',
+  };
+  speak((prefix || '') + (texts[stage] || texts.low));
+  toast('正在朗读，再点一次可停止');
+}
+
+
+/* ---------- 自动朗读（给不识字的家长）----------
+   设计判断：不识字的用户，「需要先点按钮」的设计都不可靠。
+   最稳的是打开就念。但默认关闭——因为自动出声可能打扰别人，
+   由家里识字的人帮设一次即可。 */
+const TTS_AUTO_KEY = 'learnos.ttsAuto';
+
+function ttsAutoOn() {
+  try { return localStorage.getItem(TTS_AUTO_KEY) === '1'; } catch { return false; }
+}
+
+function toggleTtsAuto(el) {
+  try { localStorage.setItem(TTS_AUTO_KEY, el.checked ? '1' : '0'); } catch {}
+  if (el.checked) {
+    toast('已开启自动朗读');
+    speakPhrases();
+  } else {
+    stopSpeak();
+    toast('已关闭自动朗读');
+  }
+}
+
+function syncTtsAutoCheckbox() {
+  const el = document.getElementById('ttsAuto');
+  if (el) el.checked = ttsAutoOn();
+}
+
+/** 打开 App 后自动念一遍今日要点 */
+function autoSpeakIfEnabled() {
+  if (!ttsAutoOn()) return;
+  // 等页面渲染完再念，避免与其它提示音重叠
+  setTimeout(() => {
+    const cur = adapter?.db?.kids?.[kidId];
+    const head = cur?.nickname ? `你好。今天是${cur.nickname}的学习时间。` : '你好。';
+    speakDaily(head);
+  }, 1200);
+}
+
 /* ---------- 首次使用引导 ---------- */
 const GUIDE_KEY = 'learnos.onboarded';
 
@@ -1164,6 +1328,7 @@ Object.assign(window, {
   exportData, go, resetAll, saveKid, showAnswer, startReview,
   switchKid, toggleKidForm,
   guideOpen, guideClose, guideNext, guidePrev, renderWeek, renderStats,
+  speakPhrases, speakDaily, stopSpeak, toggleTtsAuto, syncTtsAutoCheckbox,
 });
 
 /* ---------- 启动 ---------- */
@@ -1171,6 +1336,10 @@ Object.assign(window, {
   bootStore();               // 迁移旧数据 + 确定当前孩子
   await loadDB();
   renderAll();
+  syncTtsAutoCheckbox();
+
+  // 自动朗读（仅当用户开启过）
+  autoSpeakIfEnabled();
 
   // 首次使用 → 自动显示引导
   // 注意：已经有数据的老用户不弹，避免打扰
