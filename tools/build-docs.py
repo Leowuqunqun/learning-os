@@ -45,6 +45,41 @@ def slugify(text):
     return s or 'sec'
 
 
+def rewrite_md_link(url):
+    """
+    把「相对仓库根」的站内链接改写成「相对 docs/」的正确路径。
+
+    为什么需要：源文档里的链接是按仓库根写的（如 01-方法论/xxx.md），
+    但渲染产物在 docs/ 下，同样写法会解析成 docs/01-方法论/xxx.md —— 断链。
+    两类都要处理：
+      1. .md  → 映射到它的渲染产物 docs/xxx.html
+      2. .html（如打印版）→ 补上 ../ 指回仓库根
+    """
+    if not url or url.startswith(('http://', 'https://', 'mailto:', '#')):
+        return url
+
+    anchor = ''
+    if '#' in url:
+        url, anchor = url.split('#', 1)
+        anchor = '#' + anchor
+
+    # --- 情况 1：.md → 渲染产物 ---
+    if url.endswith('.md'):
+        key = url.lstrip('./')
+        for src, out, *_ in DOCS:
+            if src == key or os.path.basename(src) == os.path.basename(key):
+                return './' + out + anchor
+        # 没有渲染产物的 .md：至少回到仓库根，让用户能拿到源文件
+        base = os.path.basename(key)
+        return '../' + key if '/' in key else '../' + base
+
+    # --- 情况 2：.html 且带目录前缀（打印版这类仓库根下的独立页面）---
+    if url.endswith('.html') and not url.startswith(('./', '../')):
+        return '../' + url + anchor
+
+    return url + anchor
+
+
 def inline(text):
     """处理行内标记：代码、粗体、链接、删除线"""
     # 先保护行内代码，避免其中内容被后续规则改写
@@ -56,9 +91,9 @@ def inline(text):
 
     text = re.sub(r'`([^`]+)`', stash, text)
     text = html.escape(text, quote=False)
-    # 链接 [文字](url)
+    # 链接 [文字](url) —— 顺带把 .md 链接改写成渲染后的 .html
     text = re.sub(r'\[([^\]]+)\]\(([^)\s]+)\)',
-                  lambda m: f'<a href="{m.group(2)}">{m.group(1)}</a>', text)
+                  lambda m: f'<a href="{rewrite_md_link(m.group(2))}">{m.group(1)}</a>', text)
     # 粗体：用非贪婪 .+? 而非 [^*]+，否则 **文本含 *斜体* 时匹配失败
     text = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', text, flags=re.S)
     # 斜体：避免误伤已转换的标签属性
