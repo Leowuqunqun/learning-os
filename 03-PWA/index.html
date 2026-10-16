@@ -178,6 +178,29 @@ details .body li{margin:5px 0}
 .tw th{background:var(--brand-soft);font-weight:650;white-space:nowrap}
 .tw tr:last-child td{border-bottom:0}
 
+
+/* 自测复习弹层 */
+#review{position:fixed;inset:0;z-index:180;background:var(--bg);
+  display:flex;flex-direction:column;
+  padding:calc(16px + env(safe-area-inset-top)) 18px calc(16px + env(safe-area-inset-bottom));}
+#review[hidden]{display:none !important}
+#review .r-wrap{max-width:560px;margin:0 auto;width:100%;display:flex;flex-direction:column;height:100%}
+#review .r-bar{display:flex;justify-content:space-between;align-items:center;
+  font-size:13px;color:var(--muted);margin-bottom:14px}
+#review .r-bar button{background:none;border:0;color:var(--muted);font:inherit;
+  font-size:13.5px;cursor:pointer;padding:6px 2px}
+#review .r-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  display:flex;flex-direction:column;justify-content:center;text-align:center}
+#review .r-hint{color:var(--brand);font-size:13.5px;font-weight:600;margin:0 0 14px}
+#review .r-q{font-size:24px;font-weight:650;line-height:1.5;margin:0 0 22px;
+  word-break:break-word}
+#review .r-label{font-size:12.5px;color:var(--muted);margin-bottom:6px}
+#review .r-a{background:var(--card);border:1px solid var(--line);border-radius:12px;
+  padding:14px;font-size:16px;line-height:1.7;text-align:left;white-space:pre-wrap;
+  word-break:break-word}
+#review .r-foot{padding-top:14px;border-top:1px solid var(--line);display:flex;gap:10px}
+#review .r-foot .btn{flex:1}
+
 .toast{position:fixed;bottom:calc(84px + env(safe-area-inset-bottom));left:50%;
   transform:translateX(-50%);background:#0f172a;color:#fff;padding:10px 18px;
   border-radius:99px;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:99}
@@ -458,6 +481,31 @@ details .body li{margin:5px 0}
   <button data-v="more" onclick="go('more',this)"><span class="ic">⋯</span>更多</button>
 </nav>
 
+<!-- 自测复习弹层 -->
+<div id="review" hidden>
+  <div class="r-wrap">
+    <div class="r-bar">
+      <span id="rProgress">1 / 1</span>
+      <button id="rQuit" onclick="reviewQuit()">退出</button>
+    </div>
+    <div class="r-body">
+      <p class="r-hint" id="rHint">先合上书，自己想一想</p>
+      <div class="r-q" id="rQuestion"></div>
+      <div id="rAnswerBox" hidden>
+        <div class="r-label">你的解释</div>
+        <div class="r-a" id="rAnswer"></div>
+      </div>
+    </div>
+    <div class="r-foot" id="rFoot">
+      <button class="btn" id="rReveal" onclick="reviewReveal()">看答案</button>
+      <div id="rGrade" hidden style="display:flex;gap:10px;width:100%">
+        <button class="btn ghost" style="flex:1" onclick="reviewGrade(false)">没想起来</button>
+        <button class="btn" style="flex:1" onclick="reviewGrade(true)">想起来了</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- 首次使用引导 -->
 <div id="guide" hidden>
   <div class="g-wrap">
@@ -666,7 +714,7 @@ function renderToday(){
   }else{
     if(due.length)h+=due.map(c=>`<div class="item"><div style="flex:1;min-width:0">
       <div class="t">${esc(c.front)}</div><div class="m">${esc(c.sub)}</div></div>
-      <button class="btn sm" onclick="showAnswer('${c.id}')">看答案</button></div>`).join('');
+      <button class="btn sm" onclick="reviewOne('${c.id}')">自测</button></div>`).join('');
     if(errs.length)h+=errs.map(e=>`<div class="item"><div style="flex:1;min-width:0">
       <div class="t">错题重做：${esc(e.q.slice(0,50))}</div>
       <div class="m">${esc(e.type)} · 第 ${e.round+1} 次</div></div>
@@ -682,17 +730,103 @@ function renderToday(){
   const cur=adapter.db.kids[kidId];
   dailyFlow.innerHTML=flow[cur?.stage]||flow.low;
 }
-function showAnswer(id){
-  const c=DB.cards.find(x=>x.id===id);if(!c)return;
-  const ok=confirm('【'+c.front+'】\n\n你的解释：\n'+c.back+'\n\n—— 你刚才想起来了吗？\n\n[确定]=想起来了  [取消]=没想起来');
-  ok?cardOK(id):cardFail(id);
+/* ---------- 自测复习（不用 confirm）----------
+   为什么重写：
+   旧实现用 confirm() 同时展示「问题 + 答案」再问"想起来了么"——
+   这**直接破坏了「先合书自测」的核心机制**（答案和问题一起出现，
+   等于把答案递到眼前再问你想没想起来）。
+   另外 iOS「添加到主屏幕」后的 standalone 模式对 confirm 支持不稳，
+   一旦不弹窗，复习流程会静默失效。
+
+   新实现分两步：先只显示问题 → 用户自己回忆 → 再点「看答案」→ 自评。 */
+
+let RQ = { queue: [], idx: 0, revealed: false, kind: 'card' };
+
+function reviewOpen(items) {
+  if (!items.length) { toast('今天没有待复习内容'); return; }
+  RQ = { queue: items, idx: 0, revealed: false, kind: items[0].kind };
+  const el = document.getElementById('review');
+  el.hidden = false;
+  document.body.style.overflow = 'hidden';
+  reviewRender();
 }
-function startReview(){
-  const due=DB.cards.filter(isDue);
-  const errs=DB.errs.filter(e=>!e.done&&isDue(e));
-  if(!due.length&&!errs.length)return toast('今天没有待复习内容');
-  if(due.length)return showAnswer(due[0].id);
-  errDone(errs[0].id);
+
+function reviewRender() {
+  const it = RQ.queue[RQ.idx];
+  if (!it) { reviewQuit(); return; }
+
+  document.getElementById('rProgress').textContent = (RQ.idx + 1) + ' / ' + RQ.queue.length;
+  document.getElementById('rHint').textContent =
+    it.kind === 'card' ? '先合上书，自己想一想' : '先自己做一遍，再看当初错在哪';
+
+  document.getElementById('rQuestion').textContent =
+    it.kind === 'card' ? it.front : it.question;
+
+  document.getElementById('rAnswer').textContent =
+    it.kind === 'card'
+      ? (it.back || '（没有写解释）')
+      : ('我当时想的是：' + (it.thinking || '（没记）') + '\n\n' +
+         (it.gap ? '差在哪一步：' + it.gap : ''));
+
+  document.getElementById('rAnswerBox').hidden = !RQ.revealed;
+  document.getElementById('rReveal').hidden = RQ.revealed;
+  document.getElementById('rGrade').hidden = !RQ.revealed;
+
+  // 错题只有「做对了」一个动作，不需要自评两个按钮
+  if (it.kind === 'error' && RQ.revealed) {
+    document.getElementById('rGrade').innerHTML =
+      '<button class="btn" style="flex:1" onclick="reviewGrade(true)">这次做对了</button>';
+  } else if (it.kind === 'card' && RQ.revealed) {
+    document.getElementById('rGrade').innerHTML =
+      '<button class="btn ghost" style="flex:1" onclick="reviewGrade(false)">没想起来</button>' +
+      '<button class="btn" style="flex:1" onclick="reviewGrade(true)">想起来了</button>';
+  }
+}
+
+function reviewReveal() { RQ.revealed = true; reviewRender(); }
+
+async function reviewGrade(ok) {
+  const it = RQ.queue[RQ.idx];
+  try {
+    if (it.kind === 'card') {
+      await adapter.gradeCard(kidId, it.id, ok);
+      markActivity(kidId);
+    } else {
+      if (ok) { await adapter.resolveError(kidId, it.id); markActivity(kidId); }
+    }
+  } catch (e) { toast('保存失败'); }
+
+  RQ.idx++;
+  RQ.revealed = false;
+  if (RQ.idx >= RQ.queue.length) {
+    reviewQuit();
+    await loadDB(); renderAll();
+    toast('复习完了，做得不错 👍');
+  } else {
+    reviewRender();
+  }
+}
+
+function reviewQuit() {
+  document.getElementById('review').hidden = true;
+  document.body.style.overflow = '';
+  loadDB().then(renderAll).catch(() => {});
+}
+
+/** 只复习某一张卡（从今日页的「自测」按钮进来） */
+function reviewOne(cardId) {
+  const c = (DB.cards || []).find(x => x.id === cardId);
+  if (!c) { toast('卡片不存在'); return; }
+  reviewOpen([{ kind: 'card', id: c.id, front: c.front, back: c.back, due: c.due }]);
+}
+
+/** 今日待复习：知识卡 + 错题混排 */
+function startReview() {
+  const cards = (DB.cards || []).filter(isDue)
+    .map(c => ({ kind: 'card', id: c.id, front: c.front, back: c.back, due: c.due }));
+  const errs = (DB.errs || []).filter(e => !e.done && isDue(e))
+    .map(e => ({ kind: 'error', id: e.id, question: e.q, thinking: e.think, gap: e.gap, due: e.due }));
+  reviewOpen([...cards, ...errs]);
 }
 
 /* ---------- 档案（多孩子） ---------- */
@@ -1354,10 +1488,11 @@ function guidePrev() { if (gIdx > 0) { gIdx--; guideRender(); } }
 /* ---------- 暴露给 inline onclick（module 作用域默认不挂 window） ---------- */
 Object.assign(window, {
   addCard, addErr, delCard, delErr, delKid, editKid, errDone,
-  exportData, go, resetAll, saveKid, showAnswer, startReview,
+  exportData, go, resetAll, saveKid, startReview, reviewOne,
   switchKid, toggleKidForm,
   guideOpen, guideClose, guideNext, guidePrev, renderWeek, renderStats,
   speakPhrases, speakDaily, stopSpeak, toggleTtsAuto, syncTtsAutoCheckbox, warmUpVoices,
+  reviewReveal, reviewGrade, reviewQuit,
 });
 
 /* ---------- 启动 ---------- */
