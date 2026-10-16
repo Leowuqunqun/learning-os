@@ -87,7 +87,7 @@
 <ul><li><strong>PhET 互动模拟</strong>：<strong>189 个</strong>中文 HTML5 模拟，CC BY 4.0（授权最干净） → 可自由打包、可离线、免费。直链格式见清单文件。</li><li><strong>国家中小学智慧教育平台</strong>：主力免费平台，电子课本可下载 ⚠️ 但版权属出版社 → <strong>项目只能引导家长自行下载，不得打包再分发</strong></li><li>⚠️ <strong>"Khan Academy 有完整中文版"是错的</strong> —— 域名存活但内容严重不全</li><li>⚠️ <strong>Anki iOS 版收费（约 $24.99）</strong> —— iPad 用户请走网页版 ankiweb.net</li><li>⚠️ 一批网上高频推荐的站点实测<strong>已失效</strong>（51voa/putclub/hxen/24en 等），清单内已标注</li></ul>
 <hr>
 <h2 id="设计红线-违反任一条就不做">设计红线（违反任一条就不做）</h2>
-<ol><li><strong>零成本</strong> —— 核心方法必须免费，付费只能是可选增强</li><li><strong>离线可用</strong> —— 断网后核心功能不失效</li><li><strong>低配可用</strong> —— 老旧设备能跑（当前：单文件 20KB，零外部依赖）</li><li><strong>低文化门槛</strong> —— 不假设家长学历</li><li><strong>数据自主</strong> —— 学习数据默认只存本地，不上传（涉及未成年人）</li><li><strong>可复制</strong> —— 一个家庭跑通后能整体复制给另一个家庭</li></ol>
+<ol><li><strong>零成本</strong> —— 核心方法必须免费，付费只能是可选增强</li><li><strong>离线可用</strong> —— 断网后核心功能不失效</li><li><strong>低配可用</strong> —— 老旧设备能跑（当前：整体 88KB / 4 个模块，零外部依赖； 已实测模拟旧安卓环境，见 <code>tools/test-safari.py</code> 第 6 节）</li><li><strong>低文化门槛</strong> —— 不假设家长学历</li><li><strong>数据自主</strong> —— 学习数据默认只存本地，不上传（涉及未成年人）</li><li><strong>可复制</strong> —— 一个家庭跑通后能整体复制给另一个家庭</li></ol>
 <hr>
 <h2 id="当前状态">当前状态</h2>
 <ul><li>✅ 方法论（总纲 / 执行手册 / 学段适配 / 打印版）</li><li>✅ 资源地图（逐条 HTTP 实测，含避坑）</li><li>✅ PWA 原型（功能已测试通过：卡片、间隔算法、错题归档、离线、导入导出）</li><li>⏳ <strong>待验证：真实家庭使用效果</strong>（下一步最重要）</li></ul>
