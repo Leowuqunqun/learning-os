@@ -133,6 +133,20 @@ def convert(md):
     while i < len(lines):
         ln = lines[i]
 
+        # 支持 <details>/<summary> 透传
+        # 为什么：Markdown 里写裸 HTML 很常见，若不做透传会被 html.escape
+        # 成 &lt;details&gt; 显示给用户（踩过一次）。
+        if ln.strip().startswith('<details') or ln.strip().startswith('<summary'):
+            buf = []
+            while i < len(lines):
+                buf.append(lines[i])
+                if lines[i].strip().startswith('</details>'):
+                    i += 1
+                    break
+                i += 1
+            out.append('\n'.join(buf))
+            continue
+
         # 代码块
         if ln.strip().startswith('```'):
             lang = ln.strip()[3:].strip()

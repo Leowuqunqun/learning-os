@@ -17,7 +17,7 @@
 <main>
 <nav class="toc">
 <strong>本页目录</strong>
-<ol><li><a href="#学习操作系统-教育平权项目">学习操作系统 · 教育平权项目</a></li><li><a href="#这是什么">这是什么</a></li><li><a href="#快速开始">快速开始</a></li><li class="l3"><a href="#1-完全没条件-先看这个-0-元-5-分钟">1. 完全没条件？先看这个（0 元，5 分钟）</a></li><li class="l3"><a href="#2-有平板-手机-用-pwa">2. 有平板/手机？用 PWA</a></li><li class="l3"><a href="#3-想看方法背后的科学依据">3. 想看方法背后的科学依据？</a></li><li><a href="#目录结构">目录结构</a></li><li><a href="#核心框架-学习只有-4-个动作">核心框架：学习只有 4 个动作</a></li><li><a href="#证据基础-诚实版">证据基础（诚实版）</a></li><li><a href="#资源地图要点-已实测">资源地图要点（已实测）</a></li><li><a href="#设计红线-违反任一条就不做">设计红线（违反任一条就不做）</a></li><li><a href="#怎么验证这套东西真的能用">怎么验证这套东西真的能用</a></li><li><a href="#当前状态">当前状态</a></li><li class="l3"><a href="#已知待补">已知待补</a></li><li><a href="#下一步建议">下一步建议</a></li></ol>
+<ol><li><a href="#学习操作系统-教育平权项目">学习操作系统 · 教育平权项目</a></li><li><a href="#这是什么">这是什么</a></li><li><a href="#快速开始">快速开始</a></li><li class="l3"><a href="#1-完全没条件-先看这个-0-元-5-分钟">1. 完全没条件？先看这个（0 元，5 分钟）</a></li><li class="l3"><a href="#2-有手机-平板-直接打开-无需安装">2. 有手机/平板？直接打开（无需安装）</a></li><li class="l3"><a href="#3-想看方法背后的科学依据">3. 想看方法背后的科学依据？</a></li><li><a href="#目录结构">目录结构</a></li><li><a href="#核心框架-学习只有-4-个动作">核心框架：学习只有 4 个动作</a></li><li><a href="#证据基础-诚实版">证据基础（诚实版）</a></li><li><a href="#资源地图要点-已实测">资源地图要点（已实测）</a></li><li><a href="#设计红线-违反任一条就不做">设计红线（违反任一条就不做）</a></li><li><a href="#怎么验证这套东西真的能用">怎么验证这套东西真的能用</a></li><li><a href="#当前状态">当前状态</a></li><li class="l3"><a href="#已知待补">已知待补</a></li><li><a href="#下一步建议">下一步建议</a></li></ol>
 </nav>
 <h1 id="学习操作系统-教育平权项目">学习操作系统 · 教育平权项目</h1>
 <blockquote><p><strong>把好学校里那套隐性的学习方法，写下来，给每一个家庭。</strong></p>
@@ -30,11 +30,24 @@
 <hr>
 <h2 id="快速开始">快速开始</h2>
 <h3 id="1-完全没条件-先看这个-0-元-5-分钟">1. 完全没条件？先看这个（0 元，5 分钟）</h3>
-<p>打开 <a href="../01-方法论/打印版-零门槛.html"><code>01-方法论/打印版-零门槛.html</code></a> → ⌘P 打印 3 页 → 贴上冰箱。 只需要纸和笔，爷爷奶奶也能执行。</p>
-<h3 id="2-有平板-手机-用-pwa">2. 有平板/手机？用 PWA</h3>
+<p>打开 <a href="../01-方法论/打印版-零门槛.html"><code>01-方法论/打印版-零门槛.html</code></a> → 点「打印」（电脑 Ctrl+P / Mac ⌘P，手机在分享菜单）→ 打 3 页 → 贴上冰箱。 只需要纸和笔，爷爷奶奶也能执行。</p>
+<h3 id="2-有手机-平板-直接打开-无需安装">2. 有手机/平板？直接打开（无需安装）</h3>
+<p><strong>线上地址（直接发给家长即可）</strong>： <strong>https://leowuqunqun.github.io/learning-os/</strong></p>
+<p>装到桌面，就像 App 一样用，<strong>断网也能用</strong>：</p>
+<div class="tw"><table>
+<thead><tr>
+<th>设备</th>
+<th>怎么装</th>
+</tr></thead><tbody>
+<tr><td><strong>iPhone / iPad</strong></td><td>用 <strong>Safari</strong> 打开 → 底部「分享」→「添加到主屏幕」</td></tr>
+<tr><td><strong>安卓手机 / 平板</strong></td><td>用 <strong>Chrome</strong> 打开 → 右上角「⋮」→「安装应用」或「添加到主屏幕」</td></tr>
+<tr><td><strong>电脑</strong></td><td>直接打开即可，也可以拖到书签栏</td></tr>
+</tbody></table></div>
+<blockquote><p>注意：iOS 上必须用 <strong>Safari</strong>（用微信内置浏览器打开的话， 请点右上角「⋯」→「在 Safari 中打开」，否则装不了）。 安卓用 Chrome 同理。</p></blockquote>
+<h4 id="如果你想自己部署一份-技术用户">如果你想自己部署一份（技术用户）</h4>
 <pre><code>cd 03-PWA &amp;&amp; python3 -m http.server 8080
-# 浏览器打开 http://localhost:8080
-# iPad Safari：分享 → 添加到主屏幕 → 像 App 一样用，断网也能用</code></pre>
+# 浏览器打开 http://localhost:8080</code></pre>
+<p>或直接把 <code>03-PWA/</code> 目录放到任意静态托管（GitHub Pages / Cloudflare Pages 都免费）。 整个应用 88KB、零依赖，不需要后端。</p>
 <h3 id="3-想看方法背后的科学依据">3. 想看方法背后的科学依据？</h3>
 <p><a href="./zhengju.html"><code>01-方法论/学习科学证据简报.md</code></a> —— 40 篇文献，含证据强度分级与"不可宣称"红线。</p>
 <hr>
