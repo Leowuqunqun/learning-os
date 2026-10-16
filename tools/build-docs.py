@@ -235,7 +235,9 @@ header{background:var(--card);border-bottom:1px solid var(--line);
  font-weight:600;margin-bottom:10px}
 header h1{margin:0;font-size:21px;line-height:1.35;letter-spacing:.01em}
 header .desc{margin:6px 0 0;color:var(--muted);font-size:13.5px}
-main{max-width:760px;margin:0 auto;padding:18px 18px 40px}
+main{max-width:760px;margin:0 auto;padding:18px 18px 40px;overflow-x:hidden;width:100%}
+/* 防止任何子元素把页面撑宽（手机上是致命的） */
+main > *{max-width:100%}
 footer{max-width:760px;margin:0 auto;padding:22px 18px 50px;
  border-top:1px solid var(--line);color:var(--muted);font-size:12.5px;text-align:center}
 footer p{margin:4px 0}
@@ -254,31 +256,41 @@ main ul,main ol{padding-left:22px;margin:10px 0}
 main li{margin:6px 0}
 main hr{border:0;border-top:1px solid var(--line);margin:26px 0}
 
-/* 代码：手机上可横向滚动，不撑破页面 */
+/* 代码：手机上可横向滚动，不撑破页面
+   坑：pre 里的 code 若用 width:max-content，会把祖先的 scrollWidth 一起撑大，
+   表现为 body.scrollWidth > 视口宽（页面能左右晃）。
+   解法：pre 本身限宽 + overflow 滚动，code 用 width:max-content 但被 pre 裁住。 */
 pre{background:var(--code);border:1px solid var(--line);border-radius:10px;
  padding:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;margin:12px 0;
- max-width:100%}
+ max-width:100%;width:100%}
 pre code{background:none;padding:0;font-size:13px;line-height:1.65;
  font-family:ui-monospace,Menlo,Consolas,monospace;white-space:pre;
- display:block;width:max-content;min-width:0}
+ display:block;width:max-content;min-width:0;max-width:none}
 code{background:var(--code);padding:1.5px 5px;border-radius:5px;
  font-size:.9em;font-family:ui-monospace,Menlo,Consolas,monospace;
  word-break:break-word;overflow-wrap:anywhere}
 
 /* 引用块 */
 blockquote{margin:14px 0;padding:12px 14px;background:var(--soft);
- border-left:3px solid var(--brand);border-radius:0 9px 9px 0}
-blockquote p{margin:6px 0}
+ border-left:3px solid var(--brand);border-radius:0 9px 9px 0;
+ max-width:100%;overflow-x:auto;overflow-wrap:anywhere}
+blockquote p{margin:6px 0;overflow-wrap:anywhere}
+blockquote pre{margin:10px 0}
 blockquote p:first-child{margin-top:0}
 blockquote p:last-child{margin-bottom:0}
 
-/* 表格：关键——手机上横向滚动而不是压缩变形 */
+/* 表格：关键——手机上横向滚动而不是压缩变形
+   坑1：.tw 必须 max-width:100%，否则被内部 max-content 表格撑开
+   坑2：表格用 min-width:max-content，但不设 width:100%（否则窄表被拉宽、
+        宽表又溢出）；改为 width:auto + 由内容决定 */
 .tw{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:14px 0;
- border:1px solid var(--line);border-radius:10px;position:relative}
+ border:1px solid var(--line);border-radius:10px;position:relative;
+ max-width:100%;width:100%}
 .tw.scrollable::after{content:"→ 可左右滑动";position:absolute;top:6px;right:8px;
  font-size:10.5px;color:var(--muted);background:var(--card);padding:1px 6px;
  border-radius:99px;pointer-events:none}
-table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:max-content}
+table{border-collapse:collapse;font-size:13.5px;
+ min-width:max-content;width:auto;max-width:none}
 th,td{border-bottom:1px solid var(--line);padding:9px 11px;text-align:left;
  vertical-align:top;white-space:normal;min-width:74px}
 th{background:var(--soft);font-weight:680;white-space:nowrap}

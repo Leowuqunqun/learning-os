@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>measuring…</title><style>
+body{margin:0;background:#1e293b}
+iframe{width:360px;height:760px;border:0;background:#fff;display:block}
+</style></head><body>
+<iframe id="f" src="./docs/shouce.html"></iframe>
+<script>
+var target = new URLSearchParams(location.search).get('p') || './docs/shouce.html';
+document.getElementById('f').src = target;
+document.getElementById('f').addEventListener('load', function () {
+  var tries = 0;
+  (function go() {
+    tries++;
+    try {
+      var d = document.getElementById('f').contentDocument;
+      var de = d.documentElement;
+      var w = de.clientWidth;
+      if (w < 300 && tries < 20) return setTimeout(go, 400);
+      var over = [];
+      d.querySelectorAll('body *').forEach(function (el) {
+        var r = el.getBoundingClientRect();
+        if (r.right > w + 2) {
+          if (el.closest('.tw')) return;
+          if (el.tagName === 'PRE' || el.closest('pre')) return;
+          over.push(el.tagName + '.' + String(el.className).split(' ')[0].slice(0, 14) + ' w=' + Math.round(r.width));
+        }
+      });
+      document.title = 'REAL|vw=' + w + '|scrollW=' + d.body.scrollWidth
+        + '|溢出=' + over.length + '|' + over.slice(0, 6).join(' ;; ');
+    } catch (e) { document.title = 'ERR ' + e.message; }
+  })();
+});
+</script>
+</body></html>
