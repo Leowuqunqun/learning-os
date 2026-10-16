@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>学习操作系统 · 打印版（零门槛）</title>
+<style>
+  @page { size: A4; margin: 14mm; }
+  * { box-sizing: border-box; }
+  body { font: 13px/1.65 -apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+         color: #111; margin: 0; padding: 20px; max-width: 820px; margin: 0 auto; }
+  h1 { font-size: 21px; margin: 0 0 4px; }
+  h2 { font-size: 15px; margin: 20px 0 8px; padding-bottom: 4px;
+       border-bottom: 2px solid #111; page-break-after: avoid; }
+  h3 { font-size: 13.5px; margin: 14px 0 6px; page-break-after: avoid; }
+  p, li { margin: 4px 0; }
+  ul { padding-left: 18px; margin: 6px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 12px; }
+  th, td { border: 1px solid #999; padding: 5px 7px; text-align: left; vertical-align: top; }
+  th { background: #f0f0f0; font-weight: 600; }
+  .sub { color: #555; font-size: 12px; margin-bottom: 12px; }
+  .box { border: 1.5px solid #111; border-radius: 6px; padding: 10px 12px; margin: 10px 0; }
+  .tip { background: #f7f7f7; border-left: 3px solid #111; padding: 8px 11px; margin: 9px 0; }
+  .flow { font-family: ui-monospace,Menlo,monospace; font-size: 11.5px; line-height: 1.8; }
+  .pagebreak { page-break-before: always; }
+  .chk { font-family: ui-monospace,monospace; }
+  .noprint { margin-bottom: 16px; }
+  @media print { .noprint { display: none; } body { padding: 0; } }
+</style>
+</head>
+<body>
+
+<div class="noprint" style="background:#eff6ff;border:1px solid #2563eb;border-radius:8px;padding:10px 14px;font-size:12.5px">
+  <b>打印说明</b>：按 <b>⌘P</b> 打印。建议「缩放 100%」、勾选「背景图形」。
+  共 3 页：<b>第1页</b>家长速查（贴冰箱）· <b>第2页</b>复习表 + 错题表（可多印）· <b>第3页</b>孩子用讲解模板。
+</div>
+
+<h1>学习操作系统 · 零门槛打印版</h1>
+<div class="sub">不需要手机、不需要 App、不需要家长会做题。一张纸就能开始。<br>
+教育平权项目 · 免费复制 · 欢迎转发给任何家庭</div>
+
+<!-- ============ 第 1 页 ============ -->
+<h2>一、家长只需记住 3 句话</h2>
+
+<div class="box">
+  <p style="font-size:15px;margin:6px 0"><b>1. 「你讲给我听。」</b><br>
+  <span style="font-size:12px;color:#444">—— 替代「你懂了吗」。孩子永远回答"懂了"，但讲不出来就是没懂。</span></p>
+
+  <p style="font-size:15px;margin:6px 0"><b>2. 「你当时是怎么想的？」</b><br>
+  <span style="font-size:12px;color:#444">—— 替代「怎么又错了」。问思路，不问对错。</span></p>
+
+  <p style="font-size:15px;margin:6px 0"><b>3. 「这题问的是什么？」</b><br>
+  <span style="font-size:12px;color:#444">—— 孩子卡住时用。让他重新读题，通常自己就会了。</span></p>
+</div>
+
+<div class="tip">
+<b>为什么这 3 句话有用？</b>它们都不需要家长懂学科知识。
+你不需要会做那道题，你只需要让孩子<b>把思考过程说出来</b>——
+说出来就暴露了哪里不懂，这比任何辅导都有效。
+</div>
+
+<h2>二、为什么"努力却没用"</h2>
+<table>
+<tr><th style="width:34%">孩子常做的（低效）</th><th style="width:33%">为什么没用</th><th>改成这样（有效）</th></tr>
+<tr><td>反复读课文</td><td>越读越顺，大脑误以为"会了"</td><td>合上书，讲一遍</td></tr>
+<tr><td>用荧光笔划重点</td><td>手在动，脑没动；还会高估自己</td><td>划完合书自问"刚才划的啥意思"</td></tr>
+<tr><td>抄错题 + 抄答案</td><td>只是"重读"，几乎无效</td><td>记下"我当时怎么想的"，3 天后再做</td></tr>
+<tr><td>一次刷同一类题 20 道</td><td>只是练熟了套路，换个问法就废</td><td>混着练不同题型</td></tr>
+<tr><td>考前突击</td><td>考完就忘，等于没学</td><td>每天 5 分钟，按复习表来</td></tr>
+</table>
+
+<h2>三、学习只有 4 个动作</h2>
+<table>
+<tr><th style="width:16%">动作</th><th style="width:26%">一句话做法</th><th>判断标准</th></tr>
+<tr><td><b>① 编码</b><br><span style="font-size:11px;color:#666">装进脑子</span></td>
+    <td>读完合上书，用自己的话讲一遍</td>
+    <td>讲得出来 = 会；讲不出来 = 回去再看</td></tr>
+<tr><td><b>② 巩固</b><br><span style="font-size:11px;color:#666">对抗遗忘</span></td>
+    <td>按复习表：当天 → 第2天 → 第4天 → 第7天 → 第15天</td>
+    <td>每次<b>先合书自测</b>，想不起来再看</td></tr>
+<tr><td><b>③ 提取</b><br><span style="font-size:11px;color:#666">拿得出来</span></td>
+    <td>错题隔几天重做；讲给别人听</td>
+    <td>不看书、不查、能答出来</td></tr>
+<tr><td><b>④ 迁移</b><br><span style="font-size:11px;color:#666">举一反三</span></td>
+    <td>做完题追问："如果条件反过来呢？"</td>
+    <td>换个问法还会 = 真懂</td></tr>
+</table>
+
+<div class="tip">
+<b>关于"举一反三"：</b>它<b>不是聪明，是见过足够多的变化</b>。
+只见过一种题型，换个问法必然不会。见多了，自然就会了。<br>
+所以别骂孩子"怎么这么笨"，要问："这类题你见过几种问法？"
+</div>
+
+<h2>四、每天怎么安排（比陪写 2 小时管用）</h2>
+<div class="flow">
+① 放学先玩 20 分钟 &nbsp;&nbsp;← 刚需，不是奖励<br>
+② 作业前问一句：「今天学了什么？」（口头说，1 分钟）<br>
+③ 写作业 &nbsp;&nbsp;← 家长<b>不陪写</b>，只在卡住时问「这题问的是什么」<br>
+④ 复习 5-10 分钟：按复习表打勾 + 错题重做<br>
+⑤ 睡前 3 分钟：当小老师，讲一个知识点给你听
+</div>
+
+<div class="box" style="margin-top:12px">
+<b>家长最容易犯的错：</b>
+<ul style="margin-bottom:0">
+<li>陪写作业 → 孩子不思考，等答案 → <b>越陪越差</b></li>
+<li>把"玩"当奖励 → 暗示"学习是苦的" → 孩子更讨厌学习</li>
+<li>考砸时讲道理 → 此时孩子只需要「辛苦了，先吃饭」</li>
+<li>拿孩子跟别人比 → 只跟他自己的上个月比</li>
+</ul>
+</div>
+
+<!-- ============ 第 2 页 ============ -->
+<div class="pagebreak"></div>
+<h1>复习表 &nbsp;<span style="font-size:12px;font-weight:400;color:#555">（贴书桌前 · 建议多印几张）</span></h1>
+<div class="sub">用法：每学一个新知识点，写在第 1 列。到对应的日子，<b>合上书自测</b>，想起来就打 ✓，想不起来就打 ✗ 并再讲一遍。</div>
+
+<table>
+<tr>
+  <th style="width:26%">知识点</th>
+  <th>当天</th><th>第2天</th><th>第4天</th><th>第7天</th><th>第15天</th><th>第30天</th>
+</tr>
+<tr><td>&nbsp;</td><td class="chk">&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>&nbsp;</td><td class="chk">&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>&nbsp;</td><td class="chk">&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>&nbsp;</td><td class="chk">&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>&nbsp;</td><td class="chk">&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>&nbsp;</td><td class="chk">&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>&nbsp;</td><td class="chk">&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>&nbsp;</td><td class="chk">&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>&nbsp;</td><td class="chk">&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>&nbsp;</td><td class="chk">&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>&nbsp;</td><td class="chk">&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>&nbsp;</td><td class="chk">&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+</table>
+
+<div class="tip">
+<b>关键：</b>每次都要<b>先合上书</b>。想不起来的那 10 秒，才是真正在记忆。
+一看答案就想起来 = 没记住，明天还要再来一次。
+</div>
+
+<h1 style="margin-top:26px">错题表 <span style="font-size:12px;font-weight:400;color:#555">（价值 90% 在"重做"，不在"记录"）</span></h1>
+
+<table>
+<tr>
+  <th style="width:22%">题目（可简写）</th>
+  <th style="width:24%">我当时是怎么想的 <span style="font-weight:400;font-size:11px">← 最重要</span></th>
+  <th style="width:16%">差在哪一步</th>
+  <th style="width:14%">错因</th>
+  <th style="width:8%">D3</th><th style="width:8%">D7</th><th style="width:8%">D15</th>
+</tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+</table>
+
+<div class="tip">
+错因只标一个（在格子里写编号）：<br>
+<b>①</b> 概念不懂 &nbsp; <b>②</b> 审题错 &nbsp; <b>③</b> 计算粗心 &nbsp; <b>④</b> 思路断 &nbsp; <b>⑤</b> 时间不够 &nbsp; <b>⑥</b> 完全没思路<br>
+<b>规则：</b>连续 3 次做对 → 划掉归档。又做错 → 把「错因」升级，重点标出来。
+</div>
+
+<!-- ============ 第 3 页 ============ -->
+<div class="pagebreak"></div>
+<h1>孩子用：当小老师模板</h1>
+<div class="sub">睡前 3 分钟。讲给家长听 —— 家长只要点头、问「然后呢？」就行，不需要懂。</div>
+
+<div class="box">
+<p><b>今天我要讲的是：</b>________________________________________</p>
+<p style="margin-top:14px"><b>1. 它是什么？（用我自己的话）</b></p>
+<p style="border-bottom:1px solid #bbb;height:26px"></p>
+<p style="border-bottom:1px solid #bbb;height:26px"></p>
+
+<p style="margin-top:14px"><b>2. 为什么是这样？</b></p>
+<p style="border-bottom:1px solid #bbb;height:26px"></p>
+<p style="border-bottom:1px solid #bbb;height:26px"></p>
+
+<p style="margin-top:14px"><b>3. 举个例子</b></p>
+<p style="border-bottom:1px solid #bbb;height:26px"></p>
+<p style="border-bottom:1px solid #bbb;height:26px"></p>
+
+<p style="margin-top:14px"><b>4. 我卡在哪 / 还没搞懂的地方</b> <span style="font-size:11px;color:#666">（写出来就成功了一半）</span></p>
+<p style="border-bottom:1px solid #bbb;height:26px"></p>
+<p style="border-bottom:1px solid #bbb;height:26px"></p>
+</div>
+
+<div class="tip">
+<b>给孩子的提示：</b>如果你讲得特别顺，可能是把书上的话背下来了 ——
+试着<b>换个例子</b>讲，或者<b>讲给比你小的孩子听</b>，看他能不能听懂。
+</div>
+
+<h1 style="margin-top:24px">每周复盘（周日 10 分钟）</h1>
+<table>
+<tr><th style="width:50%">问自己</th><th>写下来</th></tr>
+<tr><td>这周复习表打勾了几次？</td><td>&nbsp;</td></tr>
+<tr><td>哪一科最吃力？为什么？</td><td>&nbsp;</td></tr>
+<tr><td>这周有几次"讲给别人听"？</td><td>&nbsp;</td></tr>
+<tr><td>下周想改的一件事</td><td>&nbsp;</td></tr>
+</table>
+
+<div class="box" style="margin-top:20px;text-align:center">
+<p style="margin:4px 0"><b>学习操作系统 · 零门槛打印版</b></p>
+<p style="margin:4px 0;font-size:11.5px;color:#555">
+免费复制 · 欢迎转发 · 不需要 App · 不需要家长会做题<br>
+把好学校里那套隐性的学习方法，写下来给每一个家庭
+</p>
+</div>
+
+</body>
+</html>

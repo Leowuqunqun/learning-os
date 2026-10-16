@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#2563eb">
+<meta name="description" content="学习操作系统 —— 把学习变成可以照着做的流程">
+<title>学习操作系统</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="学习OS">
+<style>
+:root{
+  --bg:#f8fafc; --fg:#0f172a; --muted:#64748b; --card:#fff;
+  --line:#e2e8f0; --brand:#2563eb; --brand-soft:#eff6ff;
+  --ok:#16a34a; --warn:#ea580c; --danger:#dc2626;
+  --r:14px; --sp:16px;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#0b1220;--fg:#e2e8f0;--muted:#94a3b8;--card:#131c2e;
+        --line:#1e293b;--brand:#60a5fa;--brand-soft:#1e293b;}
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{max-width:100%;overflow-x:hidden}
+body{margin:0;background:var(--bg);color:var(--fg);
+  font:16px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  padding-bottom:calc(72px + env(safe-area-inset-bottom));}
+header{position:sticky;top:0;z-index:10;background:var(--card);border-bottom:1px solid var(--line);
+  padding:calc(12px + env(safe-area-inset-top)) var(--sp) 12px;}
+h1{margin:0;font-size:19px;font-weight:650;letter-spacing:.02em}
+.sub{color:var(--muted);font-size:12.5px;margin-top:2px}
+main{padding:var(--sp);max-width:760px;margin:0 auto}
+.view{display:none} .view.active{display:block;animation:fade .18s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:var(--sp);margin-bottom:12px}
+.card h2{margin:0 0 8px;font-size:16px;font-weight:620}
+.card p{margin:6px 0;color:var(--muted);font-size:14px}
+.big{font-size:15px;line-height:1.75;color:var(--fg)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  background:var(--brand);color:#fff;border:0;border-radius:10px;
+  padding:12px 16px;font-size:15px;font-weight:560;font-family:inherit;
+  cursor:pointer;min-height:46px;width:100%;transition:transform .06s}
+.btn:active{transform:scale(.975)}
+.btn.ghost{background:transparent;color:var(--brand);border:1.5px solid var(--brand)}
+.btn.sm{padding:8px 12px;min-height:38px;font-size:14px;width:auto}
+.row{display:flex;gap:8px;align-items:center}
+input,select,textarea{width:100%;font:inherit;font-size:16px;padding:11px 12px;
+  border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--fg)}
+textarea{min-height:80px;resize:vertical}
+label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px;font-weight:520}
+nav{position:fixed;bottom:0;left:0;right:0;z-index:20;display:flex;
+  background:var(--card);border-top:1px solid var(--line);
+  padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;background:none;border:0;font-family:inherit;font-size:11.5px;
+  color:var(--muted);padding:9px 2px 8px;cursor:pointer;display:flex;
+  flex-direction:column;align-items:center;gap:3px;font-weight:520}
+nav button .ic{font-size:19px;line-height:1}
+nav button.on{color:var(--brand)}
+.pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11.5px;
+  background:var(--brand-soft);color:var(--brand);font-weight:560}
+.pill.ok{background:#dcfce7;color:var(--ok)}
+.pill.due{background:#ffedd5;color:var(--warn)}
+.pill.done{background:#f1f5f9;color:var(--muted)}
+@media (prefers-color-scheme:dark){.pill.ok{background:#052e16}.pill.due{background:#431407}.pill.done{background:#1e293b}}
+.item{display:flex;justify-content:space-between;align-items:center;gap:10px;
+  padding:12px 0;border-bottom:1px solid var(--line)}
+.item:last-child{border-bottom:0}
+.item .t{font-size:15px;font-weight:520}
+.item .m{font-size:12px;color:var(--muted);margin-top:2px}
+.empty{text-align:center;color:var(--muted);font-size:14px;padding:28px 12px}
+.stat{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px}
+.stat>div{background:var(--card);border:1px solid var(--line);
+  border-radius:12px;padding:12px 4px;text-align:center;overflow:hidden}
+.stat .n{font-size:22px;font-weight:680;color:var(--brand)}
+.stat .l{font-size:11.5px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+details{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;background:var(--card)}
+summary{font-weight:580;cursor:pointer;font-size:15px;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"▸ ";color:var(--brand)}
+details[open] summary::before{content:"▾ "}
+details .body{padding-top:10px;font-size:14px;line-height:1.75;color:var(--fg)}
+details .body ul{padding-left:20px;margin:8px 0}
+details .body li{margin:5px 0}
+.muted{color:var(--muted);font-size:13px}
+.toast{position:fixed;bottom:calc(84px + env(safe-area-inset-bottom));left:50%;
+  transform:translateX(-50%);background:#0f172a;color:#fff;padding:10px 18px;
+  border-radius:99px;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:99}
+.toast.show{opacity:.94}
+.offline{background:var(--warn);color:#fff;text-align:center;font-size:12.5px;padding:6px}
+</style>
+</head>
+<body>
+<div id="offbar" class="offline" hidden>离线模式 · 数据保存在本机</div>
+<header>
+  <h1 id="hTitle">学习操作系统</h1>
+  <div class="sub" id="hSub">把学习变成可以照着做的流程</div>
+</header>
+
+<main>
+  <!-- 今日 -->
+  <section id="v-today" class="view active">
+    <div class="stat">
+      <div><div class="n" id="sDue">0</div><div class="l">待复习</div></div>
+      <div><div class="n" id="sCards">0</div><div class="l">知识卡</div></div>
+      <div><div class="n" id="sErr">0</div><div class="l">待重做错题</div></div>
+    </div>
+    <div class="card">
+      <h2>今天的复习</h2>
+      <div id="dueList"></div>
+      <div style="margin-top:12px"><button class="btn" onclick="startReview()">开始自测复习</button></div>
+    </div>
+    <div class="card">
+      <h2>每日流程</h2>
+      <div class="big" id="dailyFlow"></div>
+    </div>
+  </section>
+
+  <!-- 卡片 -->
+  <section id="v-cards" class="view">
+    <div class="card">
+      <h2>新建知识卡</h2>
+      <label>知识点（正面）</label>
+      <input id="cFront" placeholder="例：分数的基本性质">
+      <label>我的解释 / 答案（背面）</label>
+      <textarea id="cBack" placeholder="用你自己的话解释。讲不出来就说明还没懂。"></textarea>
+      <label>科目</label>
+      <select id="cSub">
+        <option>语文</option><option>数学</option><option>英语</option>
+        <option>物理</option><option>化学</option><option>生物</option>
+        <option>历史</option><option>地理</option><option>道法</option><option>其他</option>
+      </select>
+      <div style="margin-top:14px"><button class="btn" onclick="addCard()">添加卡片</button></div>
+      <p class="muted" style="margin-top:10px">提示：卡片正面写<b>问题</b>比写<b>名词</b>更有效。「分数的基本性质」不如「为什么 1/2 = 2/4？」</p>
+    </div>
+    <div class="card">
+      <h2>我的卡片 <span class="pill" id="cardCount">0</span></h2>
+      <div id="cardList"></div>
+    </div>
+  </section>
+
+  <!-- 错题 -->
+  <section id="v-errors" class="view">
+    <div class="card">
+      <h2>记录错题</h2>
+      <p>关键不是抄题，是记下<b>「我当时怎么想的」</b>。</p>
+      <label>题目（可简写，或写"见卷子第X题"）</label>
+      <textarea id="eQ" placeholder="题目内容"></textarea>
+      <label>我当时是怎么想的？（最重要的一栏）</label>
+      <textarea id="eThink" placeholder="我以为…… / 我没想到……"></textarea>
+      <label>正确思路差在哪一步</label>
+      <textarea id="eGap" placeholder="差在……"></textarea>
+      <label>错因类型（只选一个）</label>
+      <select id="eType">
+        <option>概念不懂</option><option>审题错</option><option>计算粗心</option>
+        <option>思路断</option><option>时间不够</option><option>完全没思路</option>
+      </select>
+      <div style="margin-top:14px"><button class="btn" onclick="addErr()">记录错题</button></div>
+    </div>
+    <div class="card">
+      <h2>错题本 <span class="pill" id="errCount">0</span></h2>
+      <p class="muted">每道错题要在 D3 / D7 / D15 重做。做对三次自动归档。</p>
+      <div id="errList"></div>
+    </div>
+  </section>
+
+  <!-- 方法 -->
+  <section id="v-method" class="view">
+    <div class="card">
+      <h2>学习只有 4 个动作</h2>
+      <div class="big">任何一次有效学习，拆到底只有 4 步。<br>整个体系就是围绕它们设计的。</div>
+    </div>
+    <details><summary>① 编码 —— 合书讲一遍</summary><div class="body">
+      <p><b>核心一问：能合上书用自己的话讲出来吗？</b></p>
+      <ul><li>读完一小段 → 合上 → 讲一遍</li>
+      <li>卡住的地方 → 回去只看那一处</li>
+      <li>追问三层：是什么 → 为什么 → 反例会怎样</li></ul>
+      <p class="muted">⚠️ 讲得<b>太流利</b>是危险信号，可能是在背原文。要打断："换个例子说给我听。"</p>
+    </div></details>
+    <details><summary>② 巩固 —— 在快忘的时候想起来</summary><div class="body">
+      <p><b>核心一问：复习的时机对吗？</b></p>
+      <ul><li>复习点：当天 → D2 → D4 → D7 → D15 → D30</li>
+      <li>每次<b>先合书自测</b>，再看答案</li>
+      <li>练熟后再交错练习（混着做不同题型）</li></ul>
+      <p class="muted">每天复习 ≤ 15 分钟。超时说明方法不对。</p>
+    </div></details>
+    <details><summary>③ 提取 —— 能拿出来用才叫会</summary><div class="body">
+      <p><b>核心一问：不看书还能答出来吗？</b></p>
+      <ul><li>"我看一遍就会了" = 熟悉感，不是掌握</li>
+      <li>错题本 90% 的价值在<b>重做</b>，不在记录</li>
+      <li>费曼技巧：讲给完全不懂的人听</li></ul>
+    </div></details>
+    <details><summary>④ 迁移 —— 举一反三的真相</summary><div class="body">
+      <p><b>核心一问：换个问法还会吗？</b></p>
+      <ul><li>举一反三不是聪明，是<b>见过足够多变式</b></li>
+      <li>做完题追问三个"如果"</li>
+      <li>新手先看例题，再自己做</li></ul>
+    </div></details>
+    <details><summary>家长最重要的一句话</summary><div class="body">
+      <p>不是「你懂了吗」——孩子永远回答"懂了"。</p>
+      <p>而是：<b>「你讲给我听」</b> 和 <b>「你当时怎么想的」</b>。</p>
+    </div></details>
+    <details><summary>学习流程（可贴墙上）</summary><div class="body">
+      <ul><li>放学先玩 20 分钟（刚需，不是奖励）</li>
+      <li>作业前 2 分钟：今天学了什么？（口头说）</li>
+      <li>做作业（家长只在卡住时问问题）</li>
+      <li>复习 5-10 分钟（按复习点自测 + 错题重做）</li>
+      <li>睡前 3 分钟：当小老师讲一个知识点</li></ul>
+    </div></details>
+  </section>
+
+  <!-- 设置 -->
+  <section id="v-more" class="view">
+    <div class="card">
+      <h2>孩子档案</h2>
+      <label>名字 / 昵称</label>
+      <input id="kidName" placeholder="例：老大">
+      <label>学段</label>
+      <select id="kidStage">
+        <option value="low">小学低段（1-3年级）</option>
+        <option value="high">小学高段（4-6年级）</option>
+        <option value="mid">初中（7-9年级）</option>
+        <option value="senior">高中（10-12年级）</option>
+      </select>
+      <div style="margin-top:14px"><button class="btn" onclick="saveKid()">保存</button></div>
+      <div id="kidState" class="muted" style="margin-top:10px"></div>
+    </div>
+    <div class="card">
+      <h2>数据</h2>
+      <p class="muted">所有数据只存在这台设备上，不会上传。涉及未成年人，这是底线。</p>
+      <div class="row" style="margin-top:10px">
+        <button class="btn ghost sm" onclick="exportData()">导出备份</button>
+        <button class="btn ghost sm" onclick="document.getElementById('imp').click()">导入</button>
+      </div>
+      <input type="file" id="imp" accept=".json" hidden onchange="importData(this)">
+      <div style="margin-top:10px"><button class="btn ghost sm" onclick="resetAll()" style="color:var(--danger);border-color:var(--danger)">清空全部数据</button></div>
+    </div>
+    <div class="card">
+      <h2>关于</h2>
+      <p>学习操作系统 v1 · 教育平权项目</p>
+      <p class="muted">把好学校里那套隐性的学习方法，显性化、流程化、工具化。<br>免费 · 离线可用 · 低配设备可用 · 数据自主。</p>
+    </div>
+  </section>
+</main>
+
+<nav>
+  <button class="on" data-v="today" onclick="go('today',this)"><span class="ic">◎</span>今日</button>
+  <button data-v="cards" onclick="go('cards',this)"><span class="ic">▤</span>知识卡</button>
+  <button data-v="errors" onclick="go('errors',this)"><span class="ic">✎</span>错题</button>
+  <button data-v="method" onclick="go('method',this)"><span class="ic">◆</span>方法</button>
+  <button data-v="more" onclick="go('more',this)"><span class="ic">⋯</span>更多</button>
+</nav>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------- 元素引用：显式获取，不依赖浏览器 ID 全局变量 ---------- */
+const $=id=>document.getElementById(id);
+const EL={};
+['sDue','sCards','sErr','dueList','dailyFlow','cFront','cBack','cSub','cardCount','cardList',
+ 'eQ','eThink','eGap','eType','errCount','errList','kidName','kidStage','kidState','imp']
+ .forEach(id=>{EL[id]=$(id);});
+// 兼容别名：让原有代码中的裸 ID 引用继续工作，同时可测试
+const sDue=EL.sDue, sCards=EL.sCards, sErr=EL.sErr,
+      cardCount=EL.cardCount, errCount=EL.errCount,
+      cFront=EL.cFront, cBack=EL.cBack, cSub=EL.cSub,
+      eQ=EL.eQ, eThink=EL.eThink, eGap=EL.eGap, eType=EL.eType,
+      kidName=EL.kidName, kidStage=EL.kidStage, kidState=EL.kidState,
+      dailyFlow=EL.dailyFlow;
+
+/* ---------- 存储层：localStorage，离线优先 ---------- */
+const KEY='learnos.v1';
+const DEF={cards:[],errs:[],kid:{name:'',stage:'low'}};
+let DB=load();
+
+function load(){
+  try{const r=localStorage.getItem(KEY);if(!r)return structuredClone(DEF);
+    const d=JSON.parse(r);return Object.assign(structuredClone(DEF),d);}
+  catch(e){return structuredClone(DEF);}
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){toast('存储空间不足');}}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1700);}
+
+/* ---------- 间隔复习算法（SM-2 简化儿童版） ---------- */
+const STEPS=[0,2,4,7,15,30];      // 天
+function nextDue(step){const d=STEPS[Math.min(step,STEPS.length-1)];
+  const t=new Date();t.setDate(t.getDate()+d);return t.toISOString().slice(0,10);}
+function today(){return new Date().toISOString().slice(0,10);}
+function isDue(x){return x.due<=today();}
+
+/* ---------- 视图切换 ---------- */
+function go(v,el){
+  document.querySelectorAll('.view').forEach(s=>s.classList.remove('active'));
+  document.getElementById('v-'+v).classList.add('active');
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('on'));
+  if(el)el.classList.add('on');
+  const T={today:['学习操作系统','把学习变成可以照着做的流程'],
+    cards:['知识卡','正面问问题，背面写你自己的解释'],
+    errors:['错题本','关键不是抄题，是记下"我当时怎么想的"'],
+    method:['学习方法','学习只有 4 个动作'],
+    more:['更多','档案 · 数据 · 关于']};
+  document.getElementById('hTitle').textContent=T[v][0];
+  document.getElementById('hSub').textContent=T[v][1];
+  if(v==='today')renderToday();
+  if(v==='cards')renderCards();
+  if(v==='errors')renderErrs();
+}
+
+/* ---------- 知识卡 ---------- */
+function addCard(){
+  const f=cFront.value.trim(),b=cBack.value.trim();
+  if(!f||!b)return toast('正反面都要填');
+  DB.cards.push({id:Date.now()+''+Math.random().toString(36).slice(2,6),
+    front:f,back:b,sub:cSub.value,step:0,due:today(),ok:0});
+  save();cFront.value='';cBack.value='';renderCards();renderToday();
+  toast('已添加，明天开始复习');
+}
+function cardOK(id){
+  const c=DB.cards.find(x=>x.id===id);if(!c)return;
+  c.step++;c.ok++;c.due=nextDue(c.step);save();
+  renderCards();renderToday();toast('记住了 · 下次 '+c.due);
+}
+function cardFail(id){
+  const c=DB.cards.find(x=>x.id===id);if(!c)return;
+  c.step=Math.max(0,c.step-2);c.due=nextDue(c.step);save();
+  renderCards();renderToday();toast('没关系 · 明天再来');
+}
+function delCard(id){DB.cards=DB.cards.filter(x=>x.id!==id);save();renderCards();renderToday();}
+
+function renderCards(){
+  const box=document.getElementById('cardList');
+  cardCount.textContent=DB.cards.length;
+  if(!DB.cards.length){box.innerHTML='<div class="empty">还没有卡片。<br>先从今天学的一个知识点开始。</div>';return;}
+  box.innerHTML=DB.cards.slice().reverse().map(c=>`
+    <div class="item"><div style="flex:1;min-width:0">
+      <div class="t">${esc(c.front)}</div>
+      <div class="m">${esc(c.sub)} · 复习 ${c.step+1}/${STEPS.length} 次 · 下次 ${c.due}</div>
+    </div>
+    <div class="row" style="gap:6px">
+      <button class="btn sm ghost" onclick="delCard('${c.id}')">删</button>
+    </div></div>`).join('');
+}
+
+/* ---------- 错题 ---------- */
+const ERR_STEPS=[3,7,15];
+function addErr(){
+  const q=eQ.value.trim(),th=eThink.value.trim();
+  if(!q)return toast('至少填题目');
+  DB.errs.push({id:Date.now()+''+Math.random().toString(36).slice(2,6),
+    q,think:th,gap:eGap.value.trim(),type:eType.value,
+    round:0,due:nextDue(ERR_STEPS[0]),done:false});
+  save();eQ.value='';eThink.value='';eGap.value='';
+  renderErrs();renderToday();toast('已记录 · D3 重做');
+}
+function errDone(id){
+  const e=DB.errs.find(x=>x.id===id);if(!e)return;
+  e.round++;
+  if(e.round>=3){e.done=true;toast('连续做对 3 次 · 已归档 👍');}
+  else{e.due=nextDue(ERR_STEPS[e.round]);toast('做对了 · 下次 '+e.due);}
+  save();renderErrs();renderToday();
+}
+function delErr(id){DB.errs=DB.errs.filter(x=>x.id!==id);save();renderErrs();renderToday();}
+
+function renderErrs(){
+  const box=document.getElementById('errList');
+  const live=DB.errs.filter(e=>!e.done);
+  errCount.textContent=live.length;
+  if(!DB.errs.length){box.innerHTML='<div class="empty">还没有错题。<br>记录时最重要的是"我当时怎么想的"。</div>';return;}
+  box.innerHTML=DB.errs.slice().reverse().map(e=>`
+    <div class="item" style="${e.done?'opacity:.5':''}">
+      <div style="flex:1;min-width:0">
+        <div class="t">${esc(e.q.slice(0,60))}${e.q.length>60?'…':''}</div>
+        <div class="m"><span class="pill ${e.done?'done':(isDue(e)?'due':'')}">${e.done?'已归档':(isDue(e)?'待重做':'D'+ERR_STEPS[e.round])}</span>
+        ${esc(e.type)} · ${e.round}/3 次</div>
+        ${e.think?'<div class="m">当时想：'+esc(e.think.slice(0,50))+'</div>':''}
+      </div>
+      <div class="row" style="gap:6px">
+        ${!e.done?`<button class="btn sm" onclick="errDone('${e.id}')">对了</button>`:''}
+        <button class="btn sm ghost" onclick="delErr('${e.id}')">删</button>
+      </div></div>`).join('');
+}
+
+/* ---------- 今日 ---------- */
+function renderToday(){
+  const due=DB.cards.filter(isDue);
+  const errs=DB.errs.filter(e=>!e.done&&isDue(e));
+  sDue.textContent=due.length; sCards.textContent=DB.cards.length; sErr.textContent=errs.length;
+  const box=document.getElementById('dueList');
+  let h='';
+  if(!due.length&&!errs.length){
+    h='<div class="empty">今天没有待复习的，很好 👌<br>可以新建一张知识卡，或去"方法"看看。</div>';
+  }else{
+    if(due.length)h+=due.map(c=>`<div class="item"><div style="flex:1;min-width:0">
+      <div class="t">${esc(c.front)}</div><div class="m">${esc(c.sub)}</div></div>
+      <button class="btn sm" onclick="showAnswer('${c.id}')">看答案</button></div>`).join('');
+    if(errs.length)h+=errs.map(e=>`<div class="item"><div style="flex:1;min-width:0">
+      <div class="t">错题重做：${esc(e.q.slice(0,50))}</div>
+      <div class="m">${esc(e.type)} · 第 ${e.round+1} 次</div></div>
+      <button class="btn sm" onclick="errDone('${e.id}')">做对了</button></div>`).join('');
+  }
+  box.innerHTML=h;
+  const flow={
+    low:'1. 先玩 20 分钟<br>2. 作业 15-20 分钟（可分两段）<br>3. 亲子阅读 15 分钟（纯享受，不考问）<br>4. 睡前 5 分钟口头复习（当游戏）',
+    high:'1. 先玩 20 分钟<br>2. 作业前 2 分钟：今天学了什么？<br>3. 作业（家长只问问题，不给答案）<br>4. 复习 10 分钟（复习表打勾 + 错题重做）<br>5. 睡前 3 分钟：当小老师讲一个知识点',
+    mid:'1. 自主安排，家长只问"这周怎么排"<br>2. 作业<br>3. 系统复习（错题本 + 结构笔记）<br>4. 睡前 3 分钟复述<br>※ 手机放在另一个房间',
+    senior:'1. 自主规划（家长不介入方法）<br>2. 真题驱动训练<br>3. 精准定位薄弱点<br>※ 睡眠是学习的一部分，不是对立的'
+  };
+  dailyFlow.innerHTML=flow[DB.kid.stage]||flow.low;
+}
+function showAnswer(id){
+  const c=DB.cards.find(x=>x.id===id);if(!c)return;
+  const ok=confirm('【'+c.front+'】\n\n你的解释：\n'+c.back+'\n\n—— 你刚才想起来了吗？\n\n[确定]=想起来了  [取消]=没想起来');
+  ok?cardOK(id):cardFail(id);
+}
+function startReview(){
+  const due=DB.cards.filter(isDue);
+  const errs=DB.errs.filter(e=>!e.done&&isDue(e));
+  if(!due.length&&!errs.length)return toast('今天没有待复习内容');
+  if(due.length)return showAnswer(due[0].id);
+  errDone(errs[0].id);
+}
+
+/* ---------- 档案 / 数据 ---------- */
+function saveKid(){
+  DB.kid={name:kidName.value.trim(),stage:kidStage.value};
+  save();showKid();renderToday();toast('已保存');
+}
+function showKid(){
+  kidName.value=DB.kid.name||'';kidStage.value=DB.kid.stage||'low';
+  const M={low:'小学低段：家长是陪玩者，重点是把学习变游戏',
+    high:'小学高段：家长是教练，重点是建立间隔复习习惯',
+    mid:'初中：家长是管理者，重点是教计划而非催',
+    senior:'高中：家长是后勤，重点是情绪稳定'};
+  kidState.textContent=DB.kid.name?('当前：'+DB.kid.name+' · '+M[DB.kid.stage]):'还没设置';
+}
+function exportData(){
+  const b=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(b);
+  a.download='学习OS备份-'+today()+'.json';a.click();
+  toast('已导出');
+}
+function importData(inp){
+  const f=inp.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{try{DB=Object.assign(structuredClone(DEF),JSON.parse(r.result));
+    save();renderAll();toast('导入成功');}catch(e){toast('文件格式不对');}};
+  r.readAsText(f);inp.value='';
+}
+function resetAll(){
+  if(!confirm('确定清空所有数据？此操作不可恢复。'))return;
+  DB=structuredClone(DEF);save();renderAll();toast('已清空');
+}
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+function renderAll(){renderToday();renderCards();renderErrs();showKid();}
+
+/* ---------- 离线 ---------- */
+function upOffline(){document.getElementById('offbar').hidden=navigator.onLine;}
+addEventListener('online',upOffline);addEventListener('offline',upOffline);
+upOffline();
+
+/* ---------- 启动 ---------- */
+renderAll();
+if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}
+</script>
+</body>
+</html>
