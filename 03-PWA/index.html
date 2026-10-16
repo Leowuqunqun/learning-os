@@ -87,6 +87,7 @@ details .body li{margin:5px 0}
 .muted{color:var(--muted);font-size:13px}
 
 /* 首次使用引导 */
+#guide[hidden]{display:none !important}
 #guide{position:fixed;inset:0;z-index:200;background:var(--bg);
   display:flex;flex-direction:column;
   padding:calc(16px + env(safe-area-inset-top)) 18px calc(16px + env(safe-area-inset-bottom));}
@@ -116,6 +117,28 @@ details .body li{margin:5px 0}
 #guide .g-dots i{width:7px;height:7px;border-radius:99px;background:var(--line);display:block}
 #guide .g-dots i.on{background:var(--brand);width:20px}
 
+
+/* 本周坚持 */
+.wk-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
+.wk-num b{font-size:26px;font-weight:700;color:var(--brand)}
+.wk-num span{font-size:14px;color:var(--muted);margin-left:3px}
+.wk-streak{font-size:14px;color:var(--muted)}
+.wk-streak b{color:var(--fg);font-size:16px}
+.wk-cells{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.wd{aspect-ratio:1;border-radius:9px;border:1.5px solid var(--line);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:1px;background:var(--bg)}
+.wd-d{font-size:11px;color:var(--muted)}
+.wd-m{font-size:15px;font-weight:700;color:transparent}
+.wd.on{background:var(--ok);border-color:var(--ok)}
+.wd.on .wd-d{color:#fff}
+.wd.on .wd-m{color:#fff}
+.wd.today{border-color:var(--brand);border-width:2px}
+.wk-msg{margin:12px 0 0;font-size:13.5px;line-height:1.7}
+.wk-msg.muted{color:var(--muted)}
+.wk-msg.ok{color:var(--fg)}
+.wk-msg.good{color:var(--ok);font-weight:600}
+
 .toast{position:fixed;bottom:calc(84px + env(safe-area-inset-bottom));left:50%;
   transform:translateX(-50%);background:#0f172a;color:#fff;padding:10px 18px;
   border-radius:99px;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none;z-index:99}
@@ -142,6 +165,10 @@ details .body li{margin:5px 0}
       <h2>今天的复习</h2>
       <div id="dueList"></div>
       <div style="margin-top:12px"><button class="btn" onclick="startReview()">开始自测复习</button></div>
+    </div>
+    <div class="card">
+      <h2>本周坚持</h2>
+      <div id="weekStats"></div>
     </div>
     <div class="card">
       <h2>每日流程</h2>
@@ -412,18 +439,21 @@ async function addCard(){
   if(!f||!b)return toast('正反面都要填');
   if(!kidId)return toast('请先在「更多」里添加孩子');
   await adapter.addCard(kidId,{front:f,back:b,subject:cSub.value});
+  markActivity(kidId);
   cFront.value='';cBack.value='';
   await loadDB();renderCards();renderToday();
   toast('已添加，明天开始复习');
 }
 async function cardOK(id){
   await adapter.gradeCard(kidId,id,true);
+  markActivity(kidId);
   await loadDB();renderCards();renderToday();
   const c=DB.cards.find(x=>x.id===id);
   toast('记住了 · 下次 '+c.due);
 }
 async function cardFail(id){
   await adapter.gradeCard(kidId,id,false);
+  markActivity(kidId);
   await loadDB();renderCards();renderToday();
   toast('没关系 · 明天再来');
 }
@@ -453,12 +483,14 @@ async function addErr(){
   if(!q)return toast('至少填题目');
   if(!kidId)return toast('请先在「更多」里添加孩子');
   await adapter.addError(kidId,{question:q,thinking:th,gap:eGap.value.trim(),type:eType.value});
+  markActivity(kidId);
   eQ.value='';eThink.value='';eGap.value='';
   await loadDB();renderErrs();renderToday();
   toast('已记录 · D3 重做');
 }
 async function errDone(id){
   const r=await adapter.resolveError(kidId,id);
+  markActivity(kidId);
   await loadDB();renderErrs();renderToday();
   toast(r.archived ? '连续做对 3 次 · 已归档 👍' : '做对了 · 下次 '+r.due);
 }
@@ -647,13 +679,123 @@ async function resetAll(){
   await loadDB();renderAll();toast('已清空');
 }
 function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
-function renderAll(){renderToday();renderCards();renderErrs();renderKids();}
+function renderAll(){renderToday();renderCards();renderErrs();renderKids();renderWeek();}
 
 /* ---------- 离线 ---------- */
 function upOffline(){document.getElementById('offbar').hidden=navigator.onLine;}
 addEventListener('online',upOffline);addEventListener('offline',upOffline);
 upOffline();
 
+
+
+/* ---------- 本周坚持（进度反馈）----------
+   为什么要做：习惯系统失败的头号原因是"看不见进展"。
+   家长需要知道"我们这周到底做了几次"，否则三分钟热度后必然放弃。
+   注意：只记录"哪一天有动作"，不记录具体内容，最大限度保护隐私。 */
+
+const ACT_KEY = 'learnos.activity';   // {kidId: ["2026-10-16", ...]}
+
+function readActivity() {
+  try { return JSON.parse(localStorage.getItem(ACT_KEY) || '{}'); }
+  catch { return {}; }
+}
+
+/** 记录今天有过学习动作（幂等：同一天只记一次） */
+function markActivity(id) {
+  if (!id) return;
+  const all = readActivity();
+  const list = all[id] || [];
+  const t = today();
+  if (!list.includes(t)) {
+    list.push(t);
+    // 只保留最近 400 天，避免无限增长
+    all[id] = list.slice(-400);
+    try { localStorage.setItem(ACT_KEY, JSON.stringify(all)); } catch {}
+  }
+}
+
+/** 取最近 n 天的日期字符串（含今天） */
+function lastDays(n) {
+  const out = [];
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    out.push(new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+      .toISOString().slice(0, 10));
+  }
+  return out;
+}
+
+/** 计算连续天数（从今天往前推） */
+function streakOf(list) {
+  const set = new Set(list);
+  let n = 0;
+  const d = new Date();
+  // 今天没做不算断（还有一整天），从昨天开始数
+  if (!set.has(today())) d.setDate(d.getDate() - 1);
+  for (;;) {
+    const key = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+      .toISOString().slice(0, 10);
+    if (set.has(key)) { n++; d.setDate(d.getDate() - 1); }
+    else break;
+    if (n > 400) break;
+  }
+  return n;
+}
+
+function renderWeek() {
+  const box = document.getElementById('weekStats');
+  if (!box) return;
+  if (!kidId) {
+    box.innerHTML = '<div class="empty">添加孩子后开始记录</div>';
+    return;
+  }
+
+  const days = lastDays(7);
+  const act = readActivity()[kidId] || [];
+  const set = new Set(act);
+  const doneCount = days.filter(d => set.has(d)).length;
+  const streak = streakOf(act);
+
+  const WD = ['日', '一', '二', '三', '四', '五', '六'];
+  const cells = days.map((d, i) => {
+    const on = set.has(d);
+    const isToday = d === today();
+    const wd = WD[new Date(d + 'T00:00:00').getDay()];
+    return `<div class="wd ${on ? 'on' : ''} ${isToday ? 'today' : ''}">
+      <span class="wd-d">${wd}</span>
+      <span class="wd-m">${on ? '✓' : ''}</span>
+    </div>`;
+  }).join('');
+
+  // 温和的鼓励语（不施压、不比较）
+  let msg, tone;
+  if (doneCount === 0) {
+    msg = '这周还没开始。今晚睡前 3 分钟，让孩子讲一个知识点就行。';
+    tone = 'muted';
+  } else if (doneCount <= 2) {
+    msg = '开始了就好。能稳定到每周 3-4 次，效果就会明显起来。';
+    tone = 'ok';
+  } else if (doneCount <= 5) {
+    msg = '很稳。这个节奏保持住，比一周突击一次强得多。';
+    tone = 'ok';
+  } else {
+    msg = '几乎每天都做了，很棒。别忘了孩子也需要休息。';
+    tone = 'good';
+  }
+
+  box.innerHTML = `
+    <div class="wk-row">
+      <div class="wk-num"><b>${doneCount}</b><span>/ 7 天</span></div>
+      <div class="wk-streak">连续 <b>${streak}</b> 天</div>
+    </div>
+    <div class="wk-cells">${cells}</div>
+    <p class="wk-msg ${tone}">${msg}</p>
+    <p class="muted" style="font-size:12.5px;margin-top:8px">
+      只要当天记录过知识卡或错题，就算"做到"。
+    </p>
+  `;
+}
 
 /* ---------- 首次使用引导 ---------- */
 const GUIDE_KEY = 'learnos.onboarded';
@@ -770,7 +912,7 @@ Object.assign(window, {
   addCard, addErr, delCard, delErr, delKid, editKid, errDone,
   exportData, go, resetAll, saveKid, showAnswer, startReview,
   switchKid, toggleKidForm,
-  guideOpen, guideClose, guideNext, guidePrev,
+  guideOpen, guideClose, guideNext, guidePrev, renderWeek,
 });
 
 /* ---------- 启动 ---------- */
