@@ -1100,14 +1100,34 @@ function ttsSupported() {
   return typeof speechSynthesis !== 'undefined' && typeof SpeechSynthesisUtterance !== 'undefined';
 }
 
-/** 选一个中文语音；没有就返回 null 交给系统默认 */
+/** 选一个中文语音；没有就返回 null 交给系统默认
+ *  ⚠️ 关键坑：Chrome/Safari 的 getVoices() 是**异步填充**的，
+ *  首次调用常返回空数组。若不处理，用户第一次点「念给我听」会没声音，
+ *  第二次才正常——对不识字的用户来说，第一次没反应就等于"这功能是坏的"。
+ *  所以：监听 voiceschanged 事件，并在启动时预热一次。 */
+let _voicesReady = false;
+
 function pickZhVoice() {
   try {
     const vs = speechSynthesis.getVoices() || [];
+    if (vs.length) _voicesReady = true;
     return vs.find(v => /zh[-_]CN/i.test(v.lang))
         || vs.find(v => /zh/i.test(v.lang))
         || null;
   } catch { return null; }
+}
+
+/** 启动时预热语音列表，避免首次朗读静默失败 */
+function warmUpVoices() {
+  if (!ttsSupported()) return;
+  try {
+    pickZhVoice();                       // 触发一次加载
+    if (typeof speechSynthesis.addEventListener === 'function') {
+      speechSynthesis.addEventListener('voiceschanged', () => { pickZhVoice(); });
+    } else {
+      speechSynthesis.onvoiceschanged = () => { pickZhVoice(); };
+    }
+  } catch {}
 }
 
 /** 朗读一段文字；返回是否成功发起 */
@@ -1124,12 +1144,21 @@ function speak(text, { rate = 0.9 } = {}) {
     u.pitch = 1;
     const v = pickZhVoice();
     if (v) u.voice = v;
-    // 有些浏览器首次要等 voices 加载
-    if (!v && !_voiceWarned) {
-      _voiceWarned = true;
-      setTimeout(() => { const v2 = pickZhVoice(); if (v2) { /* 下次生效 */ } }, 500);
-    }
     speechSynthesis.speak(u);
+
+    // 若首次调用时语音还没加载好，短暂延迟后再补一次
+    if (!v && !_voicesReady) {
+      setTimeout(() => {
+        try {
+          const v2 = pickZhVoice();
+          if (v2 && !speechSynthesis.speaking && !speechSynthesis.pending) {
+            const u2 = new SpeechSynthesisUtterance(text);
+            u2.lang = 'zh-CN'; u2.rate = rate; u2.voice = v2;
+            speechSynthesis.speak(u2);
+          }
+        } catch {}
+      }, 400);
+    }
     return true;
   } catch (e) {
     toast('语音朗读失败');
@@ -1328,7 +1357,7 @@ Object.assign(window, {
   exportData, go, resetAll, saveKid, showAnswer, startReview,
   switchKid, toggleKidForm,
   guideOpen, guideClose, guideNext, guidePrev, renderWeek, renderStats,
-  speakPhrases, speakDaily, stopSpeak, toggleTtsAuto, syncTtsAutoCheckbox,
+  speakPhrases, speakDaily, stopSpeak, toggleTtsAuto, syncTtsAutoCheckbox, warmUpVoices,
 });
 
 /* ---------- 启动 ---------- */
@@ -1337,6 +1366,7 @@ Object.assign(window, {
   await loadDB();
   renderAll();
   syncTtsAutoCheckbox();
+  warmUpVoices();
 
   // 自动朗读（仅当用户开启过）
   autoSpeakIfEnabled();
