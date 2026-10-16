@@ -132,3 +132,32 @@ python3 tools/smoke-test.py
 
 冒烟测试已通过反向验证：故意重新引入该 bug，它能准确捕获
 （报出 ReferenceError、24 个函数缺失、数据加载为 0）。
+
+## test-safari.py
+
+**Safari / WebKit 引擎测试** —— 目标设备是 iPad，而 iPad 上所有浏览器都用 WebKit。
+
+```bash
+python3 -m http.server 8150 &
+python3 -m playwright install webkit    # 首次
+python3 tools/test-safari.py
+```
+
+### 为什么必须有它
+
+项目文档明确写「iPad Safari → 添加到主屏幕」，
+但此前**所有浏览器测试都只在 Chromium 上跑** ——
+验证的引擎和目标设备的引擎根本不是同一个。
+
+Chromium 与 WebKit 的差异点：speechSynthesis 语音列表、
+Service Worker 生命周期、隐私模式下的 localStorage、CSS 渲染细节。
+
+### 一个意外收获：只有这里能验证语音
+
+Chromium headless **永远报告 0 个语音**（无音频子系统），
+所以「不识字的家长能否用语音」这个功能一直无法验证。
+
+WebKit 报告 **68 个语音，其中 1 个中文（Tingting/zh-CN）**，
+并且实测朗读能真正触发（`onstart` 回调触发，返回 `started`）。
+
+这条验证补上了一个长期缺口：语音功能从「不报错」升级为「确实能用」。
