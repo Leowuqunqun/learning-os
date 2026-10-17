@@ -191,6 +191,22 @@ def main():
         check('★没有「改了源文件但未重建」的文档', not stale,
               f'需重跑 build-docs.py：{stale[:3]}')
 
+
+    # ---------- 入口唯一性：首页只能有一个「从这里开始」 ----------
+    print('\n【9】首页入口是否唯一（避免「从哪开始」的犹豫）')
+    idx_html = open(os.path.join(ROOT, 'index.html'), encoding='utf-8').read()
+    n_start = idx_html.count('从这里开始')
+    check('★首页只有一个「从这里开始」', n_start == 1, f'发现 {n_start} 处')
+    # 第一优先入口应指向零门槛材料（纸笔即可），而不是要求装 App
+    m = re.search(r'从这里开始[^>]*>[\s\S]{0,400}?<h2>([^<]+)</h2>', idx_html)
+    if m:
+        first = m.group(1).strip()
+        check('★第一入口是零门槛材料（非 App）',
+              'App' not in first and '学习操作系统' not in first,
+              f'实际指向：{first}')
+    # 首页首屏必须能看懂「第一次来该做什么」
+    check('首页有「第一次来」引导', '第一次来' in idx_html)
+
     print('\n' + '=' * 70)
     if fail:
         print(f'通过 {ok} 项，失败 {fail} 项')
