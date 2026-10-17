@@ -48,6 +48,11 @@ run "设计红线审计"        python3 tools/audit-redlines.py
 run "证据口径审计"        python3 tools/audit-claims.py
 run "可达性审计"          python3 tools/audit-reachability.py
 run "数据迁移测试"        node 03-PWA/migrate.test.mjs
+if [ "${SKIP_LINKS:-0}" = "1" ]; then
+  skip "资源链接健康检查" "显式跳过（SKIP_LINKS=1）"
+else
+  run "资源链接健康检查"    python3 tools/check-links.py
+fi
 
 if [ $QUICK -eq 1 ]; then
   hr
