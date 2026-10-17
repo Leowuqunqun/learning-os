@@ -244,6 +244,66 @@ def main():
                 check(f'{st} 无 JS 错误', not e3, e3[:1])
                 ctx3.close()
 
+
+            print('\n【8】统计页的错因分支（6 种错因 × 不同分布）')
+            # 统计页有多条条件分支：无数据 / 仅 1 种 / 2 种 / 粗心≥40% / 6 种全有。
+            # 这些分支此前只在人工探索中走过一次，未固化。
+            from datetime import date as _date, timedelta as _td
+            import json as _json
+
+            def _iso(n):
+                return (_date.today() - _td(days=n)).isoformat()
+
+            def _mkerrs(spec):
+                out, i = {}, 0
+                for ty, n in spec.items():
+                    for _ in range(n):
+                        out[f'e{i}'] = {
+                            "id": f'e{i}', "kidId": "k1", "question": f"题{i}",
+                            "thinking": "", "gap": "", "type": ty,
+                            "round": 0, "due": _iso(1), "archived": False,
+                            "createdAt": _iso(2)}
+                        i += 1
+                return out
+
+            CASES = [
+                ('仅1种错因', {'概念不懂': 3}, False),
+                ('2种错因', {'概念不懂': 2, '审题错': 2}, False),
+                ('粗心占多数', {'计算粗心': 5, '概念不懂': 2}, True),
+                ('粗心恰好40%', {'计算粗心': 2, '概念不懂': 3}, True),
+                ('6种全有', {t: 1 for t in ['概念不懂', '审题错', '计算粗心',
+                                            '思路断', '时间不够', '完全没思路']}, False),
+            ]
+            for cname, spec, expect_warn in CASES:
+                data = {"kids": {"k1": {"id": "k1", "nickname": "统计娃",
+                                        "stage": "high", "createdAt": _iso(5)}},
+                        "cards": {}, "errors": _mkerrs(spec)}
+                ctx4 = b.new_context(viewport={'width': 390, 'height': 844},
+                                     is_mobile=True, has_touch=True)
+                pg4 = ctx4.new_page()
+                e4 = []
+                pg4.on('pageerror', lambda e: e4.append(str(e)))
+                pg4.add_init_script(
+                    "localStorage.setItem('learnos.onboarded','1');"
+                    "localStorage.setItem('learnos.currentKid','k1');"
+                    "localStorage.setItem('learnos.adapter.local.v1', " +
+                    _json.dumps(_json.dumps(data, ensure_ascii=False)) + ");")
+                pg4.goto(APP, wait_until='networkidle')
+                pg4.wait_for_timeout(2200)
+                pg4.locator('nav button', has_text='统计').click()
+                pg4.wait_for_timeout(900)     # 留足渲染时间（此前踩过时序坑）
+
+                bars = pg4.locator('#errDist .bar-row').count()
+                advice = pg4.locator('#errAdvice').inner_text().strip()
+                warns = pg4.locator('#errAdvice .warn-box').count()
+
+                check(f'{cname}：条形图有数据', bars >= 1, bars)
+                check(f'{cname}：有可执行解读', len(advice) > 10, advice[:30])
+                if expect_warn:
+                    check(f'{cname}：触发「计算粗心」提醒', warns >= 1, warns)
+                check(f'{cname}：无 JS 错误', not e4, e4[:1])
+                ctx4.close()
+
             print('\n【5】布局')
             d = json.loads(page.evaluate(
                 "JSON.stringify({vw:document.documentElement.clientWidth,"
