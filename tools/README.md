@@ -200,8 +200,8 @@ README 里长期写着「单文件 20KB」，但实际早已是 **67KB / 4 个�
 **一条命令跑完所有检查。**
 
 ```bash
-bash tools/check-all.sh            # 完整（约 70 秒，含浏览器）
-bash tools/check-all.sh --quick    # 仅静态（约 0.1 秒，无需服务）
+bash tools/check-all.sh            # 完整（约 3 分钟，含浏览器）
+bash tools/check-all.sh --quick    # 仅静态（约 5 秒，无需服务）
 ```
 
 ### 为什么需要

@@ -155,8 +155,8 @@ cd 03-PWA && python3 -m http.server 8080
 
 ```bash
 cd ~/教育平权项目
-bash tools/check-all.sh            # 全部 10 套检查（约 70 秒）
-bash tools/check-all.sh --quick    # 仅静态检查（约 0.1 秒）
+bash tools/check-all.sh            # 全部 11 套检查（约 3 分钟）
+bash tools/check-all.sh --quick    # 仅静态检查（约 5 秒）
 ```
 
 覆盖：设计红线、证据口径、可达性、数据迁移、冒烟（应用可用性）、

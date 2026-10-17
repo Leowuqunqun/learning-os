@@ -246,6 +246,25 @@ def main():
                     if os.path.exists(f2):
                         os.remove(f2)
 
+
+    # ---------- 文档中的「套数」是否与实际一致 ----------
+    print('\n【11】验证套数声明（每加一套测试就会过时，必须自动核对）')
+    script = os.path.join(ROOT, 'tools', 'check-all.sh')
+    if not os.path.exists(script):
+        check('check-all.sh 存在', False)
+    else:
+        txt = open(script, encoding='utf-8').read()
+        actual = len(re.findall(r'run "([^"]+)"', txt))
+        readme = open(os.path.join(ROOT, 'README.md'), encoding='utf-8').read()
+        m = re.search(r'全部\s*(\d+)\s*套检查', readme)
+        if not m:
+            check('README 有套数声明', False, '未找到「全部 N 套检查」')
+        else:
+            claimed = int(m.group(1))
+            check(f'★README 声称 {claimed} 套，脚本实际 {actual} 套',
+                  claimed == actual,
+                  f'不符：声称 {claimed}，实际 {actual}（需更新 README）')
+
     print('\n' + '=' * 70)
     if fail:
         print(f'通过 {ok} 项，失败 {fail} 项')
