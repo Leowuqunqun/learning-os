@@ -80,8 +80,10 @@ run "手机适配审计"            python3 tools/audit-mobile.py
 # Safari/WebKit —— 需要 playwright + webkit
 if python3 -c "import playwright" 2>/dev/null; then
   run "Safari 引擎测试"       python3 tools/test-safari.py
+  run "多孩隔离与效率测试"     python3 tools/test-multikid.py
 else
   skip "Safari 引擎测试" "未安装 playwright"
+  skip "多孩隔离与效率测试" "未安装 playwright"
 fi
 
 # 离线与慢网 —— 需要 CDP 调试端口
