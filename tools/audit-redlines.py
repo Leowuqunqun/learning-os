@@ -207,6 +207,45 @@ def main():
     # 首页首屏必须能看懂「第一次来该做什么」
     check('首页有「第一次来」引导', '第一次来' in idx_html)
 
+
+    # ---------- 打印材料的页数声明是否与实际相符 ----------
+    print('\n【10】打印材料页数声明（纸是零门槛家庭的主要载体）')
+    import subprocess as _sp
+    chrome = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+    PRINT_DOCS = ['01-方法论/第一周打勾清单.html', '01-方法论/打印版-零门槛.html']
+    if not os.path.exists(chrome):
+        check('能验证打印页数', True, '（未找到 Chrome，跳过）')
+    else:
+        for rel in PRINT_DOCS:
+            full = os.path.join(ROOT, rel)
+            if not os.path.exists(full):
+                continue
+            html = open(full, encoding='utf-8').read()
+            # 取出「打印约 N-M 页」这样的声明
+            m = re.search(r'打印约\s*<b>(\d+)(?:-(\d+))?\s*页', html)
+            if not m:
+                check(f'{os.path.basename(rel)}：有页数声明', False, '未找到「打印约 N 页」')
+                continue
+            lo = int(m.group(1)); hi = int(m.group(2) or m.group(1))
+            # 实际生成 PDF 数页
+            tmp = f'/tmp/redline-{abs(hash(rel)) % 9999}.pdf'
+            try:
+                _sp.run([chrome, '--headless=new', '--disable-gpu', '--no-sandbox',
+                         '--no-pdf-header-footer', f'--user-data-dir=/tmp/rl-{abs(hash(rel))%9999}',
+                         f'--print-to-pdf={tmp}', f'file://{full}'],
+                        capture_output=True, timeout=90)
+                data = open(tmp, 'rb').read()
+                counts = re.findall(rb'/Count (\d+)', data)
+                actual = int(counts[0]) if counts else -1
+                check(f'{os.path.basename(rel)}：声称 {lo}-{hi} 页，实际 {actual} 页',
+                      lo <= actual <= hi, f'实际 {actual} 页超出声明范围')
+            except Exception as e:
+                check(f'{os.path.basename(rel)}：页数可验证', False, str(e)[:60])
+            finally:
+                for f2 in [tmp]:
+                    if os.path.exists(f2):
+                        os.remove(f2)
+
     print('\n' + '=' * 70)
     if fail:
         print(f'通过 {ok} 项，失败 {fail} 项')
