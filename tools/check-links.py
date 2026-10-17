@@ -59,8 +59,13 @@ def extract_urls(path):
     return sorted(out.items())
 
 
-def fetch(url, timeout=15, retries=2):
-    """返回 (状态码, 说明)。状态码 0 表示连接失败。"""
+def fetch(url, timeout=30, retries=3):
+    """返回 (状态码, 说明)。状态码 0 表示连接失败。
+
+    超时设 30 秒、重试 3 次，是因为实测有些站点极慢
+    （ebama.net 响应 12–20 秒）。最初设 15 秒/2 次会**假报失效**——
+    假警报比漏报更有害：会让人逐渐不信任检查结果。
+    """
     last_err = ''
     for attempt in range(retries + 1):
         try:
@@ -80,7 +85,7 @@ def fetch(url, timeout=15, retries=2):
         except Exception as e:
             last_err = type(e).__name__ + ': ' + str(e)[:50]
         if attempt < retries:
-            time.sleep(1.5)
+            time.sleep(2)
     return 0, last_err
 
 

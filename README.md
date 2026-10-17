@@ -155,7 +155,7 @@ cd 03-PWA && python3 -m http.server 8080
 
 ```bash
 cd ~/教育平权项目
-bash tools/check-all.sh            # 全部 12 套检查（约 3 分钟）
+bash tools/check-all.sh            # 全部 13 套检查（约 3 分钟）
 bash tools/check-all.sh --quick    # 仅静态检查（约 5 秒）
 ```
 

@@ -109,6 +109,8 @@ else
       CDP_PORT="$CDP_PORT" APP_URL="http://127.0.0.1:$PORT/03-PWA/index.html" \
         run "离线可用性测试" node 03-PWA/offline.test.mjs
       CDP_PORT="$CDP_PORT" APP_URL="http://127.0.0.1:$PORT/03-PWA/index.html" \
+        run "离线外链行为测试" node 03-PWA/offline-links.test.mjs
+      CDP_PORT="$CDP_PORT" APP_URL="http://127.0.0.1:$PORT/03-PWA/index.html" \
         run "低带宽加载测试" node 03-PWA/slow-network.test.mjs
     else
       skip "离线可用性测试" "CDP 端口未就绪"

@@ -364,13 +364,13 @@ details .body li{margin:5px 0}
     <details><summary>想了解更多（完整文档）</summary><div class="body">
       <p>App 里只放了最常用的。要看完整版，点下面（手机可读）：</p>
       <ul>
-        <li><a href="../docs/index.html">全部文档（阅读版）</a> —— 带目录，表格可左右滑</li>
-        <li><a href="../docs/zonggang.html">总纲：学习只有 4 个动作</a></li>
-        <li><a href="../docs/shouce.html">四动作执行手册</a> —— 最实用</li>
-        <li><a href="../docs/xueduan.html">学段适配指南</a> —— 按年级改方法</li>
-        <li><a href="../docs/ziyuan.html">K12 免费教育资源地图</a></li>
-        <li><a href="../docs/hanzi.html">汉字习得证据综述</a> —— 哪些有证据、哪些是空白</li>
-        <li><a href="../docs/zhengju.html">学习科学证据简报</a> —— 40 篇文献</li>
+        <li><a href="../docs/index.html" data-needs-net="1">全部文档（阅读版）</a> —— 带目录，表格可左右滑</li>
+        <li><a href="../docs/zonggang.html" data-needs-net="1">总纲：学习只有 4 个动作</a></li>
+        <li><a href="../docs/shouce.html" data-needs-net="1">四动作执行手册</a> —— 最实用</li>
+        <li><a href="../docs/xueduan.html" data-needs-net="1">学段适配指南</a> —— 按年级改方法</li>
+        <li><a href="../docs/ziyuan.html" data-needs-net="1">K12 免费教育资源地图</a></li>
+        <li><a href="../docs/hanzi.html" data-needs-net="1">汉字习得证据综述</a> —— 哪些有证据、哪些是空白</li>
+        <li><a href="../docs/zhengju.html" data-needs-net="1">学习科学证据简报</a> —— 40 篇文献</li>
       </ul>
     </div></details>
   </section>
@@ -435,8 +435,8 @@ details .body li{margin:5px 0}
       <h2>打印版（给没设备的时候）</h2>
       <p class="muted">家里老人带娃、或者不想让孩子碰屏幕时用这些。</p>
       <div class="row" style="margin-top:10px;flex-wrap:wrap">
-        <a class="btn ghost sm" href="../01-方法论/第一周打勾清单.html" target="_blank" rel="noopener">第一周打勾清单</a>
-        <a class="btn ghost sm" href="../01-方法论/打印版-零门槛.html" target="_blank" rel="noopener">零门槛打印版</a>
+        <a class="btn ghost sm" href="../01-方法论/第一周打勾清单.html" data-needs-net="1" target="_blank" rel="noopener">第一周打勾清单</a>
+        <a class="btn ghost sm" href="../01-方法论/打印版-零门槛.html" data-needs-net="1" target="_blank" rel="noopener">零门槛打印版</a>
       </div>
       <p class="muted" style="font-size:12.5px;margin-top:10px">打开后点浏览器的「打印」（手机上在分享菜单里）。</p>
     </div>
@@ -1219,6 +1219,41 @@ function renderStats() {
 }
 
 
+
+/* ---------- 离线时对外链的友好处理 ----------
+   背景：Service Worker 的 scope 是 03-PWA/，管不到 ../docs/ 和 ../01-方法论/。
+   所以这些页面**离线时打不开**（浏览器会显示错误页/白屏）。
+
+   核心功能（记录/复习/统计）都在 App 内，离线完全可用；
+   只有"看文档""打印"这类外链会失败。
+
+   处理方式：离线时拦截点击并给出说明，而不是让用户撞白屏。
+   不做预缓存的原因：把 docs 全量缓存会让体积从 88KB 涨到约 300KB，
+   对低带宽家庭是真实负担，而这些页面并非常用功能。
+*/
+function isOffline() {
+  return typeof navigator !== 'undefined' && navigator.onLine === false;
+}
+
+function markNetLinks() {
+  const off = isOffline();
+  document.querySelectorAll('[data-needs-net]').forEach(a => {
+    a.style.opacity = off ? '0.55' : '';
+    a.title = off ? '需要联网查看（你的学习记录不受影响）' : '';
+  });
+}
+
+document.addEventListener('click', e => {
+  const a = e.target.closest && e.target.closest('[data-needs-net]');
+  if (!a) return;
+  if (!isOffline()) return;
+  e.preventDefault();
+  toast('这个页面需要联网。你的学习记录不受影响，离线也能正常记 ✅');
+}, true);
+
+addEventListener('online', markNetLinks);
+addEventListener('offline', markNetLinks);
+
 /* ---------- 语音朗读（给不识字的家长）----------
    为什么用浏览器内置 TTS 而不是音频文件：
    ① 零成本、零托管 —— 不需要服务器存 mp3
@@ -1503,6 +1538,7 @@ Object.assign(window, {
   renderAll();
   syncTtsAutoCheckbox();
   warmUpVoices();
+  markNetLinks();
 
   // 自动朗读（仅当用户开启过）
   autoSpeakIfEnabled();
